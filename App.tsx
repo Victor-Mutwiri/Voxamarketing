@@ -3,6 +3,8 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './screens/LandingPage';
 import ExplorePage from './screens/ExplorePage';
 import AuthPage from './screens/AuthPage';
+import BusinessOnboarding from './screens/BusinessOnboarding';
+import BusinessDashboard from './screens/BusinessDashboard';
 
 /**
  * App Component
@@ -18,6 +20,8 @@ const App: React.FC = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/business/onboarding" element={<BusinessOnboarding />} />
+        <Route path="/business/dashboard" element={<BusinessDashboard />} />
         {/* Fallback route redirects to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

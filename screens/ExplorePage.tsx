@@ -1,80 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { INDUSTRIES } from '../constants';
 import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye, Copy, Check } from 'lucide-react';
 import Button from '../components/Button';
 import { Business } from '../types';
-
-// Expanded Mock Data
-const MOCK_BUSINESSES: Business[] = [
-  {
-    id: 1,
-    name: "Nairobi Legal Partners",
-    industry: "Legal Services",
-    location: "Upper Hill, Nairobi",
-    rating: 4.9,
-    reviews: 124,
-    tags: ["Corporate Law", "Litigation", "Commercial"],
-    image: "https://picsum.photos/400/300?random=10",
-    fullDescription: "Nairobi Legal Partners is a premier law firm specializing in corporate and commercial law. With over 20 years of experience, we have successfully represented multinational corporations and local enterprises in complex litigation and arbitration matters.",
-    phone: "+254 722 123 456",
-    email: "info@nairobilegal.co.ke",
-    website: "www.nairobilegal.co.ke",
-    isVerified: true,
-    specialties: ["Mergers & Acquisitions", "Dispute Resolution", "Intellectual Property"]
-  },
-  {
-    id: 2,
-    name: "Apex Engineering Solutions",
-    industry: "Engineering",
-    location: "Industrial Area, Nairobi",
-    rating: 4.8,
-    reviews: 89,
-    tags: ["Structural", "Civil", "Infrastructure"],
-    image: "https://picsum.photos/400/300?random=11",
-    fullDescription: "Apex Engineering delivers world-class structural and civil engineering solutions. We pride ourselves on innovation, sustainability, and timely delivery of large-scale infrastructure projects across East Africa.",
-    phone: "+254 733 987 654",
-    email: "projects@apexengineering.com",
-    website: "www.apexengineering.com",
-    isVerified: true,
-    specialties: ["Structural Audit", "Road Construction", "Water Systems"]
-  },
-  {
-    id: 3,
-    name: "MediCare Specialists",
-    industry: "Medicine & Health",
-    location: "Westlands, Nairobi",
-    rating: 5.0,
-    reviews: 210,
-    tags: ["Cardiology", "Diagnostics", "Wellness"],
-    image: "https://picsum.photos/400/300?random=12",
-    fullDescription: "A state-of-the-art medical facility offering specialized care in cardiology and advanced diagnostics. Our team comprises internationally trained consultants dedicated to patient-centric care.",
-    phone: "+254 711 555 555",
-    email: "appointments@medicare.co.ke",
-    website: "www.medicare.co.ke",
-    isVerified: true,
-    specialties: ["Cardiac Care", "Advanced Imaging", "Executive Checkups"]
-  },
-  {
-    id: 4,
-    name: "BuildRight Architects",
-    industry: "Architecture",
-    location: "Kilimani, Nairobi",
-    rating: 4.7,
-    reviews: 56,
-    tags: ["Residential", "Commercial", "Interior"],
-    image: "https://picsum.photos/400/300?random=13",
-    fullDescription: "BuildRight Architects combines aesthetic beauty with functional design. We create sustainable living and working spaces that inspire. Award winners for the 2023 Green Building Design.",
-    phone: "+254 700 444 333",
-    email: "design@buildright.com",
-    website: "www.buildright.com",
-    isVerified: true,
-    specialties: ["Eco-friendly Design", "High-rise Developments", "Interior Architecture"]
-  }
-];
+import { storage } from '../utils/storage';
 
 const ExplorePage: React.FC = () => {
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('All');
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
@@ -85,7 +19,13 @@ const ExplorePage: React.FC = () => {
   const [isMessageSent, setIsMessageSent] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null); // 'phone' | 'email'
 
-  const filteredBusinesses = MOCK_BUSINESSES.filter(biz => {
+  useEffect(() => {
+    // Fetch businesses from our storage (which includes mock seeds + new users)
+    const data = storage.getBusinesses();
+    setBusinesses(data);
+  }, []);
+
+  const filteredBusinesses = businesses.filter(biz => {
     const matchesSearch = biz.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           biz.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesIndustry = selectedIndustry === 'All' || biz.industry === selectedIndustry;

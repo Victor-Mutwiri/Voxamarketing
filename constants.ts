@@ -3,7 +3,7 @@ import { NavItem, Industry, Statistic, Testimonial } from './types';
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Home', path: '/' },
   { label: 'Explore', path: '/explore' },
-  { label: 'For Businesses', path: '/business' }, // Placeholder for business specific landing
+  { label: 'For Businesses', path: '/business/onboarding' },
 ];
 
 export const INDUSTRIES: Industry[] = [
@@ -44,6 +44,15 @@ export const INDUSTRIES: Industry[] = [
     description: 'Certified accountants, auditors, and investment advisors.',
   }
 ];
+
+export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
+  'Legal Services': ['Corporate Law', 'Family Law', 'Criminal Defense', 'Intellectual Property', 'Real Estate', 'Commercial Litigation', 'Arbitration'],
+  'Medicine & Health': ['Cardiology', 'Pediatrics', 'Dentistry', 'Orthopedics', 'Dermatology', 'Psychiatry', 'General Surgery'],
+  'Engineering': ['Civil Engineering', 'Structural Engineering', 'Electrical Engineering', 'Mechanical Engineering', 'Geotechnical', 'Water Resources'],
+  'Manufacturing': ['Textiles & Apparel', 'Food Processing', 'Plastics & Polymers', 'Metal Fabrication', 'Chemical Manufacturing', 'Electronics Assembly'],
+  'Architecture': ['Residential Design', 'Commercial Architecture', 'Landscape Architecture', 'Interior Design', 'Urban Planning', 'Sustainable Design'],
+  'Finance & Audit': ['Tax Consultancy', 'Forensic Audit', 'Investment Advisory', 'Risk Management', 'Bookkeeping', 'Corporate Finance']
+};
 
 export const STATISTICS: Statistic[] = [
   { label: 'Verified Experts', value: '500+' },

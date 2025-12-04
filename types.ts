@@ -40,3 +40,18 @@ export interface Business {
   isVerified: boolean;
   specialties: string[];
 }
+
+export interface User {
+  id: string;
+  email: string;
+  password?: string; // In real app, this would be hashed
+  businessId?: number;
+  isProfileComplete: boolean;
+  role: 'business' | 'admin';
+}
+
+export interface WaitlistEntry {
+  email: string;
+  code: string;
+  isUsed: boolean;
+}

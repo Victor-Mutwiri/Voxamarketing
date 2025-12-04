@@ -1,6 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { storage } from './utils/storage';
+
+// Initialize mock database
+storage.init();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

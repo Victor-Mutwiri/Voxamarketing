@@ -64,7 +64,7 @@ const Navbar: React.FC = () => {
               size="sm"
               onClick={() => navigate('/auth')}
             >
-              Get Started
+              Business Portal
             </Button>
           </div>
 
@@ -104,7 +104,7 @@ const Navbar: React.FC = () => {
               navigate('/auth');
             }}
           >
-            Get Started
+            Business Portal
           </Button>
         </div>
       )}
