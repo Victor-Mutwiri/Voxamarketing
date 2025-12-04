@@ -154,13 +154,12 @@ export const storage = {
     return users.find(u => u.id === userId) || null;
   },
 
-  // Business: Create/Update Profile
+  // Business: Create Profile
   saveBusinessProfile: (userId: string, data: Partial<Business>) => {
-    // 1. Create or Update the Business Record
     const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
     const newBusiness: Business = {
       id: Date.now(),
-      rating: 5.0, // Default new
+      rating: 5.0,
       reviews: 0,
       isVerified: false,
       tags: [],
@@ -170,7 +169,6 @@ export const storage = {
     businesses.push(newBusiness);
     localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(businesses));
 
-    // 2. Link User to Business
     const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex !== -1) {
@@ -180,6 +178,26 @@ export const storage = {
     }
     
     return newBusiness;
+  },
+
+  // Business: Update Profile
+  updateBusinessProfile: (businessId: number, data: Partial<Business>) => {
+    const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
+    const index = businesses.findIndex(b => b.id === businessId);
+    
+    if (index !== -1) {
+      // Merge updates
+      businesses[index] = { ...businesses[index], ...data };
+      
+      // Update tags if specialties changed
+      if (data.specialties) {
+          businesses[index].tags = data.specialties.slice(0, 3);
+      }
+      
+      localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(businesses));
+      return businesses[index];
+    }
+    return null;
   },
 
   // Data: Get All Businesses

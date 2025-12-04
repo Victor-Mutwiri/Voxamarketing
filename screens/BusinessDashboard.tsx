@@ -1,20 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  BarChart3, 
-  Users, 
+  Eye, 
+  Phone, 
   MessageSquare, 
-  Settings, 
-  LogOut,
-  Eye,
-  MousePointerClick,
-  Phone,
+  MousePointerClick, 
   ArrowUpRight,
-  User,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import DashboardSidebar from '../components/DashboardSidebar';
 import Button from '../components/Button';
 import { storage } from '../utils/storage';
 import { Business, User as UserType } from '../types';
@@ -37,11 +31,6 @@ const BusinessDashboard: React.FC = () => {
     }
   }, [navigate]);
 
-  const handleLogout = () => {
-    storage.logout();
-    navigate('/');
-  };
-
   // Mock Data
   const stats = [
     { label: 'Total Profile Views', value: '1,245', change: '+12%', icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -58,58 +47,10 @@ const BusinessDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar (Desktop) */}
-      <aside className="w-64 bg-voxa-navy text-white hidden md:flex flex-col fixed inset-y-0 z-50">
-        <div className="p-6">
-          <h1 className="text-2xl font-serif font-bold">Voxa<span className="text-voxa-gold">.</span></h1>
-          <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider">Business Portal</p>
-        </div>
-
-        <nav className="flex-grow px-4 space-y-2 mt-4">
-          <a href="#" className="flex items-center gap-3 px-4 py-3 bg-white/10 text-white rounded-lg transition-colors">
-            <LayoutDashboard className="w-5 h-5 text-voxa-gold" />
-            <span className="font-medium">Overview</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-            <BarChart3 className="w-5 h-5" />
-            <span>Analytics</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-            <MessageSquare className="w-5 h-5" />
-            <span>Inquiries</span>
-            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">3</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-            <User className="w-5 h-5" />
-            <span>My Profile</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-            <Settings className="w-5 h-5" />
-            <span>Settings</span>
-          </a>
-        </nav>
-
-        <div className="p-4 border-t border-slate-700">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:text-white transition-colors w-full"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
+      <DashboardSidebar />
 
       {/* Main Content */}
       <main className="flex-grow md:ml-64 min-h-screen">
-        {/* Mobile Header */}
-        <div className="md:hidden bg-voxa-navy text-white p-4 flex justify-between items-center sticky top-0 z-50">
-          <span className="font-serif font-bold text-xl">Voxa.</span>
-          <Button variant="ghost" className="text-white" onClick={handleLogout}>
-             <LogOut className="w-5 h-5" />
-          </Button>
-        </div>
-
         <div className="p-8">
           <header className="flex justify-between items-center mb-8">
             <div>
