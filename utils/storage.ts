@@ -1,10 +1,20 @@
-import { Business, User, WaitlistEntry } from '../types';
+import { Business, User, WaitlistEntry, OperatingHours, WeekDay } from '../types';
 
 const STORAGE_KEYS = {
   USERS: 'voxa_users',
   BUSINESSES: 'voxa_businesses',
   WAITLIST: 'voxa_waitlist',
   SESSION: 'voxa_session'
+};
+
+const DEFAULT_HOURS: OperatingHours = {
+  Monday: { isOpen: true, open: '08:00', close: '17:00' },
+  Tuesday: { isOpen: true, open: '08:00', close: '17:00' },
+  Wednesday: { isOpen: true, open: '08:00', close: '17:00' },
+  Thursday: { isOpen: true, open: '08:00', close: '17:00' },
+  Friday: { isOpen: true, open: '08:00', close: '17:00' },
+  Saturday: { isOpen: false, open: '09:00', close: '13:00' },
+  Sunday: { isOpen: false, open: '09:00', close: '13:00' },
 };
 
 // Initial Seed Data for Waitlist
@@ -29,7 +39,9 @@ const INITIAL_BUSINESSES: Business[] = [
     email: "info@nairobilegal.co.ke",
     website: "www.nairobilegal.co.ke",
     isVerified: true,
-    specialties: ["Mergers & Acquisitions", "Dispute Resolution", "Intellectual Property"]
+    isVisible: true,
+    specialties: ["Mergers & Acquisitions", "Dispute Resolution", "Intellectual Property"],
+    operatingHours: DEFAULT_HOURS
   },
   {
     id: 2,
@@ -45,7 +57,9 @@ const INITIAL_BUSINESSES: Business[] = [
     email: "projects@apexengineering.com",
     website: "www.apexengineering.com",
     isVerified: true,
-    specialties: ["Structural Audit", "Road Construction", "Water Systems"]
+    isVisible: true,
+    specialties: ["Structural Audit", "Road Construction", "Water Systems"],
+    operatingHours: DEFAULT_HOURS
   },
   {
     id: 3,
@@ -61,7 +75,9 @@ const INITIAL_BUSINESSES: Business[] = [
     email: "appointments@medicare.co.ke",
     website: "www.medicare.co.ke",
     isVerified: true,
-    specialties: ["Cardiac Care", "Advanced Imaging", "Executive Checkups"]
+    isVisible: true,
+    specialties: ["Cardiac Care", "Advanced Imaging", "Executive Checkups"],
+    operatingHours: DEFAULT_HOURS
   },
   {
     id: 4,
@@ -77,7 +93,9 @@ const INITIAL_BUSINESSES: Business[] = [
     email: "design@buildright.com",
     website: "www.buildright.com",
     isVerified: true,
-    specialties: ["Eco-friendly Design", "High-rise Developments", "Interior Architecture"]
+    isVisible: true,
+    specialties: ["Eco-friendly Design", "High-rise Developments", "Interior Architecture"],
+    operatingHours: DEFAULT_HOURS
   }
 ];
 
@@ -120,7 +138,8 @@ export const storage = {
       email,
       password, // In real app, hash this
       isProfileComplete: false,
-      role: 'business'
+      role: 'business',
+      theme: 'light'
     };
     users.push(newUser);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
@@ -154,6 +173,45 @@ export const storage = {
     return users.find(u => u.id === userId) || null;
   },
 
+  // Auth: Update User Preferences
+  updateUserTheme: (userId: string, theme: 'light' | 'dark') => {
+    const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    const index = users.findIndex(u => u.id === userId);
+    if (index !== -1) {
+      users[index].theme = theme;
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      
+      // Also update current session class immediately
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  },
+
+  deleteAccount: (userId: string) => {
+    // 1. Get User
+    const users: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+    const user = users.find(u => u.id === userId);
+    
+    if (user) {
+      // 2. Remove Business if exists
+      if (user.businessId) {
+        const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
+        const updatedBusinesses = businesses.filter(b => b.id !== user.businessId);
+        localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(updatedBusinesses));
+      }
+
+      // 3. Remove User
+      const updatedUsers = users.filter(u => u.id !== userId);
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updatedUsers));
+
+      // 4. Clear Session
+      localStorage.removeItem(STORAGE_KEYS.SESSION);
+    }
+  },
+
   // Business: Create Profile
   saveBusinessProfile: (userId: string, data: Partial<Business>) => {
     const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
@@ -162,6 +220,8 @@ export const storage = {
       rating: 5.0,
       reviews: 0,
       isVerified: false,
+      isVisible: true,
+      operatingHours: DEFAULT_HOURS,
       tags: [],
       ...data
     } as Business;

@@ -6,6 +6,7 @@ import AuthPage from './screens/AuthPage';
 import BusinessOnboarding from './screens/BusinessOnboarding';
 import BusinessDashboard from './screens/BusinessDashboard';
 import BusinessProfileEditor from './screens/BusinessProfileEditor';
+import BusinessSettings from './screens/BusinessSettings';
 
 /**
  * App Component
@@ -24,6 +25,7 @@ const App: React.FC = () => {
         <Route path="/business/onboarding" element={<BusinessOnboarding />} />
         <Route path="/business/dashboard" element={<BusinessDashboard />} />
         <Route path="/business/profile" element={<BusinessProfileEditor />} />
+        <Route path="/business/settings" element={<BusinessSettings />} />
         {/* Fallback route redirects to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

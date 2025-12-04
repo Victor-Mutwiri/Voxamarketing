@@ -24,6 +24,16 @@ export interface Statistic {
   value: string;
 }
 
+export type WeekDay = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+export interface DailyHours {
+  isOpen: boolean;
+  open: string;
+  close: string;
+}
+
+export type OperatingHours = Record<WeekDay, DailyHours>;
+
 export interface Business {
   id: number;
   name: string;
@@ -38,7 +48,9 @@ export interface Business {
   email: string;
   website: string;
   isVerified: boolean;
+  isVisible: boolean;
   specialties: string[];
+  operatingHours?: OperatingHours;
 }
 
 export interface User {
@@ -48,6 +60,7 @@ export interface User {
   businessId?: number;
   isProfileComplete: boolean;
   role: 'business' | 'admin';
+  theme?: 'light' | 'dark';
 }
 
 export interface WaitlistEntry {

@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { INDUSTRIES } from '../constants';
-import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye, Copy, Check } from 'lucide-react';
+import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye, Copy, Check, Clock } from 'lucide-react';
 import Button from '../components/Button';
-import { Business } from '../types';
+import { Business, WeekDay, DailyHours } from '../types';
 import { storage } from '../utils/storage';
+import { useSearchParams } from 'react-router-dom';
 
 const ExplorePage: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('All');
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [searchParams] = useSearchParams();
 
   // Interaction State
   const [revealedContacts, setRevealedContacts] = useState<number[]>([]); // IDs of businesses where contact is revealed
@@ -23,9 +25,24 @@ const ExplorePage: React.FC = () => {
     // Fetch businesses from our storage (which includes mock seeds + new users)
     const data = storage.getBusinesses();
     setBusinesses(data);
-  }, []);
+
+    // Handle "Preview Mode" from query param
+    const previewId = searchParams.get('preview');
+    if (previewId) {
+      const biz = data.find(b => b.id.toString() === previewId);
+      if (biz) {
+        setSelectedBusiness(biz);
+      }
+    }
+  }, [searchParams]);
 
   const filteredBusinesses = businesses.filter(biz => {
+    // If we are previewing a specific business, we might ignore visibility, 
+    // but in general list we respect `isVisible`.
+    if (biz.isVisible === false && searchParams.get('preview') !== biz.id.toString()) {
+      return false;
+    }
+
     const matchesSearch = biz.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           biz.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesIndustry = selectedIndustry === 'All' || biz.industry === selectedIndustry;
@@ -222,7 +239,7 @@ const ExplorePage: React.FC = () => {
 
       {/* Business Profile Modal */}
       {selectedBusiness && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedBusiness(null)}></div>
           
           <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl flex flex-col md:flex-row">
@@ -260,6 +277,28 @@ const ExplorePage: React.FC = () => {
                   <h3 className="text-lg font-bold text-slate-900 mb-3">About</h3>
                   <p className="text-slate-600 leading-relaxed">{selectedBusiness.fullDescription}</p>
                 </div>
+
+                {/* Operating Hours Display */}
+                {selectedBusiness.operatingHours && (
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> Hours of Operation
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {Object.entries(selectedBusiness.operatingHours).map(([day, data]) => {
+                        const hours = data as DailyHours;
+                        return (
+                          <div key={day} className="flex justify-between border-b border-slate-50 py-1">
+                            <span className="text-slate-500 font-medium">{day}</span>
+                            <span className={hours.isOpen ? 'text-slate-900' : 'text-slate-400 italic'}>
+                              {hours.isOpen ? `${hours.open} - ${hours.close}` : 'Closed'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 mb-3">Specialties</h3>
