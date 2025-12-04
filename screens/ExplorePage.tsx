@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { INDUSTRIES } from '../constants';
-import { Search, MapPin, Star, Filter } from 'lucide-react';
+import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye } from 'lucide-react';
 import Button from '../components/Button';
+import { Business } from '../types';
 
-// Mock business data for the explore page
-const MOCK_BUSINESSES = [
+// Expanded Mock Data
+const MOCK_BUSINESSES: Business[] = [
   {
     id: 1,
     name: "Nairobi Legal Partners",
@@ -14,8 +15,14 @@ const MOCK_BUSINESSES = [
     location: "Upper Hill, Nairobi",
     rating: 4.9,
     reviews: 124,
-    tags: ["Corporate Law", "Litigation"],
-    image: "https://picsum.photos/400/300?random=10"
+    tags: ["Corporate Law", "Litigation", "Commercial"],
+    image: "https://picsum.photos/400/300?random=10",
+    fullDescription: "Nairobi Legal Partners is a premier law firm specializing in corporate and commercial law. With over 20 years of experience, we have successfully represented multinational corporations and local enterprises in complex litigation and arbitration matters.",
+    phone: "+254 722 123 456",
+    email: "info@nairobilegal.co.ke",
+    website: "www.nairobilegal.co.ke",
+    isVerified: true,
+    specialties: ["Mergers & Acquisitions", "Dispute Resolution", "Intellectual Property"]
   },
   {
     id: 2,
@@ -24,8 +31,14 @@ const MOCK_BUSINESSES = [
     location: "Industrial Area, Nairobi",
     rating: 4.8,
     reviews: 89,
-    tags: ["Structural", "Civil"],
-    image: "https://picsum.photos/400/300?random=11"
+    tags: ["Structural", "Civil", "Infrastructure"],
+    image: "https://picsum.photos/400/300?random=11",
+    fullDescription: "Apex Engineering delivers world-class structural and civil engineering solutions. We pride ourselves on innovation, sustainability, and timely delivery of large-scale infrastructure projects across East Africa.",
+    phone: "+254 733 987 654",
+    email: "projects@apexengineering.com",
+    website: "www.apexengineering.com",
+    isVerified: true,
+    specialties: ["Structural Audit", "Road Construction", "Water Systems"]
   },
   {
     id: 3,
@@ -34,8 +47,14 @@ const MOCK_BUSINESSES = [
     location: "Westlands, Nairobi",
     rating: 5.0,
     reviews: 210,
-    tags: ["Cardiology", "Diagnostics"],
-    image: "https://picsum.photos/400/300?random=12"
+    tags: ["Cardiology", "Diagnostics", "Wellness"],
+    image: "https://picsum.photos/400/300?random=12",
+    fullDescription: "A state-of-the-art medical facility offering specialized care in cardiology and advanced diagnostics. Our team comprises internationally trained consultants dedicated to patient-centric care.",
+    phone: "+254 711 555 555",
+    email: "appointments@medicare.co.ke",
+    website: "www.medicare.co.ke",
+    isVerified: true,
+    specialties: ["Cardiac Care", "Advanced Imaging", "Executive Checkups"]
   },
   {
     id: 4,
@@ -44,14 +63,26 @@ const MOCK_BUSINESSES = [
     location: "Kilimani, Nairobi",
     rating: 4.7,
     reviews: 56,
-    tags: ["Residential", "Commercial"],
-    image: "https://picsum.photos/400/300?random=13"
+    tags: ["Residential", "Commercial", "Interior"],
+    image: "https://picsum.photos/400/300?random=13",
+    fullDescription: "BuildRight Architects combines aesthetic beauty with functional design. We create sustainable living and working spaces that inspire. Award winners for the 2023 Green Building Design.",
+    phone: "+254 700 444 333",
+    email: "design@buildright.com",
+    website: "www.buildright.com",
+    isVerified: true,
+    specialties: ["Eco-friendly Design", "High-rise Developments", "Interior Architecture"]
   }
 ];
 
 const ExplorePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('All');
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+
+  // Interaction State
+  const [revealedContacts, setRevealedContacts] = useState<number[]>([]); // IDs of businesses where contact is revealed
+  const [leadFormData, setLeadFormData] = useState({ name: '', phone: '', email: '', message: '' });
+  const [isMessageSent, setIsMessageSent] = useState(false);
 
   const filteredBusinesses = MOCK_BUSINESSES.filter(biz => {
     const matchesSearch = biz.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -59,6 +90,30 @@ const ExplorePage: React.FC = () => {
     const matchesIndustry = selectedIndustry === 'All' || biz.industry === selectedIndustry;
     return matchesSearch && matchesIndustry;
   });
+
+  const handleOpenProfile = (business: Business) => {
+    setSelectedBusiness(business);
+    setIsMessageSent(false);
+    setLeadFormData({ name: '', phone: '', email: '', message: '' });
+  };
+
+  const handleLeadSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real app, send data to backend here.
+    // This is the "First Lead" trigger for your business logic.
+    setIsMessageSent(true);
+    setTimeout(() => {
+        // Reset after a few seconds or keep showing success message
+    }, 3000);
+  };
+
+  const handleRevealContact = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent other clicks
+    if (selectedBusiness && !revealedContacts.includes(selectedBusiness.id)) {
+        setRevealedContacts([...revealedContacts, selectedBusiness.id]);
+        // Analytics trigger: User showed interest (Soft Lead)
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -98,15 +153,15 @@ const ExplorePage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* Filters Sidebar */}
-          <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100">
+          <div className="hidden lg:block w-64 flex-shrink-0 space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 sticky top-24">
               <div className="flex items-center gap-2 mb-4 text-slate-900 font-bold">
                 <Filter className="w-4 h-4" /> Filters
               </div>
               
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Industry</h3>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
                   <input 
                     type="radio" 
                     name="industry" 
@@ -114,10 +169,10 @@ const ExplorePage: React.FC = () => {
                     onChange={() => setSelectedIndustry('All')}
                     className="text-voxa-gold focus:ring-voxa-gold"
                   />
-                  <span className="text-slate-700">All Industries</span>
+                  <span className="text-slate-700 text-sm">All Industries</span>
                 </label>
                 {INDUSTRIES.map(ind => (
-                  <label key={ind.id} className="flex items-center gap-2 cursor-pointer">
+                  <label key={ind.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
                     <input 
                       type="radio" 
                       name="industry" 
@@ -125,7 +180,7 @@ const ExplorePage: React.FC = () => {
                       onChange={() => setSelectedIndustry(ind.name)}
                       className="text-voxa-gold focus:ring-voxa-gold"
                     />
-                    <span className="text-slate-700">{ind.name}</span>
+                    <span className="text-slate-700 text-sm">{ind.name}</span>
                   </label>
                 ))}
               </div>
@@ -140,34 +195,50 @@ const ExplorePage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredBusinesses.map((biz) => (
-                <div key={biz.id} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group">
-                  <div className="h-48 overflow-hidden relative">
+                <div key={biz.id} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full">
+                  <div className="h-48 overflow-hidden relative cursor-pointer" onClick={() => handleOpenProfile(biz)}>
                      <img src={biz.image} alt={biz.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                     <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded text-xs font-bold text-slate-900 shadow-sm">
-                       Verified
-                     </div>
+                     {biz.isVerified && (
+                       <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-voxa-navy shadow-sm flex items-center gap-1">
+                         <CheckCircle className="w-3 h-3 text-voxa-gold" /> Verified
+                       </div>
+                     )}
                   </div>
-                  <div className="p-6">
+                  <div className="p-6 flex-grow flex flex-col">
                     <div className="flex justify-between items-start mb-2">
                       <div className="text-xs font-bold text-voxa-gold uppercase tracking-wide">{biz.industry}</div>
                       <div className="flex items-center gap-1 text-slate-700 text-sm font-medium">
                         <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> {biz.rating} ({biz.reviews})
                       </div>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">{biz.name}</h3>
+                    <h3 
+                      className="text-xl font-bold text-slate-900 mb-2 cursor-pointer hover:text-voxa-gold transition-colors"
+                      onClick={() => handleOpenProfile(biz)}
+                    >
+                      {biz.name}
+                    </h3>
                     <div className="flex items-center gap-1 text-slate-500 text-sm mb-4">
                       <MapPin className="w-3 h-3" /> {biz.location}
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mb-6">
-                      {biz.tags.map(tag => (
+                      {biz.tags.slice(0, 3).map(tag => (
                         <span key={tag} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-md">
                           {tag}
                         </span>
                       ))}
                     </div>
 
-                    <Button variant="outline" size="sm" className="w-full">View Profile</Button>
+                    <div className="mt-auto pt-4 border-t border-slate-50">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => handleOpenProfile(biz)}
+                      >
+                        View Profile
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -187,6 +258,201 @@ const ExplorePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Business Profile Modal */}
+      {selectedBusiness && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedBusiness(null)}></div>
+          
+          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl flex flex-col md:flex-row">
+            <button 
+              onClick={() => setSelectedBusiness(null)}
+              className="absolute top-4 right-4 p-2 bg-white/80 rounded-full hover:bg-slate-100 transition-colors z-20"
+            >
+              <X className="w-5 h-5 text-slate-600" />
+            </button>
+
+            {/* Left Col - Business Info & Contacts */}
+            <div className="w-full md:w-3/5 p-0 flex flex-col">
+              <div className="h-64 relative flex-shrink-0">
+                <img src={selectedBusiness.image} alt={selectedBusiness.name} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+                <div className="absolute bottom-6 left-6 text-white">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-voxa-gold text-white text-xs font-bold px-2 py-0.5 rounded uppercase">{selectedBusiness.industry}</span>
+                    {selectedBusiness.isVerified && (
+                      <span className="flex items-center gap-1 text-xs font-medium bg-white/20 backdrop-blur-md px-2 py-0.5 rounded border border-white/20">
+                        <CheckCircle className="w-3 h-3" /> Verified
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-3xl font-bold font-serif leading-tight">{selectedBusiness.name}</h2>
+                  <div className="flex items-center gap-4 mt-2 text-slate-200 text-sm">
+                    <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedBusiness.location}</span>
+                    <span className="flex items-center gap-1"><Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> {selectedBusiness.rating} ({selectedBusiness.reviews})</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-8 flex-grow overflow-y-auto">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-3">About</h3>
+                  <p className="text-slate-600 leading-relaxed">{selectedBusiness.fullDescription}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-3">Specialties</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedBusiness.specialties.map(spec => (
+                      <span key={spec} className="px-3 py-1 bg-voxa-navy/5 text-voxa-navy text-sm font-medium rounded-full">
+                        {spec}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-3">Contact Information</h3>
+                  <div className="space-y-4 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                    {/* Phone Section */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-voxa-navy shadow-sm">
+                          <Phone className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase tracking-wide">Phone</p>
+                          <p className={`font-medium ${revealedContacts.includes(selectedBusiness.id) ? 'text-slate-900' : 'text-slate-400 tracking-wider'}`}>
+                            {revealedContacts.includes(selectedBusiness.id) 
+                              ? selectedBusiness.phone 
+                              : `${selectedBusiness.phone.substring(0, 7)}...`}
+                          </p>
+                        </div>
+                      </div>
+                      {!revealedContacts.includes(selectedBusiness.id) && (
+                        <Button size="sm" variant="ghost" onClick={handleRevealContact} className="text-xs gap-1">
+                          <Eye className="w-3 h-3" /> Show
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Email Section */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-voxa-navy shadow-sm">
+                          <Mail className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase tracking-wide">Email</p>
+                          <p className={`font-medium ${revealedContacts.includes(selectedBusiness.id) ? 'text-slate-900' : 'text-slate-400 tracking-wider'}`}>
+                             {revealedContacts.includes(selectedBusiness.id) 
+                              ? selectedBusiness.email 
+                              : "******@" + selectedBusiness.email.split('@')[1]}
+                          </p>
+                        </div>
+                      </div>
+                      {!revealedContacts.includes(selectedBusiness.id) && (
+                        <Button size="sm" variant="ghost" onClick={handleRevealContact} className="text-xs gap-1">
+                          <Eye className="w-3 h-3" /> Show
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-2">
+                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-voxa-navy shadow-sm">
+                        <Globe className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Website</p>
+                        <p className="font-medium text-slate-900">{selectedBusiness.website}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Col - Messaging Form (Always Visible) */}
+            <div className="w-full md:w-2/5 bg-slate-50 p-8 border-l border-slate-100 flex flex-col justify-center">
+              {isMessageSent ? (
+                <div className="text-center space-y-4 animate-in fade-in zoom-in duration-300">
+                  <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Inquiry Sent!</h3>
+                  <p className="text-slate-600">
+                    Thanks for contacting {selectedBusiness.name}. They will respond to the details provided shortly.
+                  </p>
+                  <Button variant="outline" className="mt-4" onClick={() => setIsMessageSent(false)}>
+                    Send Another Message
+                  </Button>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-slate-900 mb-1">Send an Inquiry</h3>
+                    <p className="text-slate-500 text-sm">Fill out the form below to contact this business directly.</p>
+                  </div>
+
+                  <form onSubmit={handleLeadSubmit} className="space-y-4 flex-grow flex flex-col">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Your Name</label>
+                      <input 
+                        required 
+                        type="text" 
+                        className="w-full p-3 rounded-lg border border-slate-200 focus:ring-1 focus:ring-voxa-gold focus:border-voxa-gold outline-none bg-white"
+                        placeholder="John Doe"
+                        value={leadFormData.name}
+                        onChange={(e) => setLeadFormData({...leadFormData, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number</label>
+                      <input 
+                        required 
+                        type="tel" 
+                        className="w-full p-3 rounded-lg border border-slate-200 focus:ring-1 focus:ring-voxa-gold focus:border-voxa-gold outline-none bg-white"
+                        placeholder="+254..."
+                        value={leadFormData.phone}
+                        onChange={(e) => setLeadFormData({...leadFormData, phone: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email Address</label>
+                      <input 
+                        required 
+                        type="email" 
+                        className="w-full p-3 rounded-lg border border-slate-200 focus:ring-1 focus:ring-voxa-gold focus:border-voxa-gold outline-none bg-white"
+                        placeholder="you@example.com"
+                        value={leadFormData.email}
+                        onChange={(e) => setLeadFormData({...leadFormData, email: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex-grow">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Message</label>
+                      <textarea 
+                        required 
+                        className="w-full p-3 rounded-lg border border-slate-200 focus:ring-1 focus:ring-voxa-gold focus:border-voxa-gold outline-none bg-white h-32 resize-none"
+                        placeholder={`Hi, I'm interested in your services...`}
+                        value={leadFormData.message}
+                        onChange={(e) => setLeadFormData({...leadFormData, message: e.target.value})}
+                      ></textarea>
+                    </div>
+
+                    <Button className="w-full gap-2 mt-auto">
+                      Send Message
+                      <Send className="w-4 h-4" />
+                    </Button>
+                    <p className="text-xs text-slate-400 text-center mt-2">
+                      Your details are sent securely to the business.
+                    </p>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

@@ -23,3 +23,20 @@ export interface Statistic {
   label: string;
   value: string;
 }
+
+export interface Business {
+  id: number;
+  name: string;
+  industry: string;
+  location: string;
+  rating: number;
+  reviews: number;
+  tags: string[];
+  image: string;
+  fullDescription: string;
+  phone: string;
+  email: string;
+  website: string;
+  isVerified: boolean;
+  specialties: string[];
+}
