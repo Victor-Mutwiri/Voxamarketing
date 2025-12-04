@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { INDUSTRIES } from '../constants';
-import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye } from 'lucide-react';
+import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye, Copy, Check } from 'lucide-react';
 import Button from '../components/Button';
 import { Business } from '../types';
 
@@ -83,6 +83,7 @@ const ExplorePage: React.FC = () => {
   const [revealedContacts, setRevealedContacts] = useState<number[]>([]); // IDs of businesses where contact is revealed
   const [leadFormData, setLeadFormData] = useState({ name: '', phone: '', email: '', message: '' });
   const [isMessageSent, setIsMessageSent] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null); // 'phone' | 'email'
 
   const filteredBusinesses = MOCK_BUSINESSES.filter(biz => {
     const matchesSearch = biz.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -91,28 +92,48 @@ const ExplorePage: React.FC = () => {
     return matchesSearch && matchesIndustry;
   });
 
+  // Analytics Simulation Function
+  const trackMetric = (action: string, businessId: number, details?: string) => {
+    console.log(`[ANALYTICS] Action: ${action} | BusinessID: ${businessId} | Details: ${details || 'N/A'}`);
+    // In a real app, this would POST to your backend: /api/analytics
+  };
+
   const handleOpenProfile = (business: Business) => {
     setSelectedBusiness(business);
     setIsMessageSent(false);
     setLeadFormData({ name: '', phone: '', email: '', message: '' });
+    trackMetric('profile_view', business.id);
   };
 
   const handleLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, send data to backend here.
-    // This is the "First Lead" trigger for your business logic.
-    setIsMessageSent(true);
-    setTimeout(() => {
-        // Reset after a few seconds or keep showing success message
-    }, 3000);
+    if (selectedBusiness) {
+        trackMetric('send_inquiry', selectedBusiness.id, 'Form Submitted');
+        setIsMessageSent(true);
+        setTimeout(() => {
+            // Reset after a few seconds or keep showing success message
+        }, 3000);
+    }
   };
 
-  const handleRevealContact = (e: React.MouseEvent) => {
+  const handleRevealContact = (e: React.MouseEvent, type: 'phone' | 'email') => {
     e.stopPropagation(); // Prevent other clicks
     if (selectedBusiness && !revealedContacts.includes(selectedBusiness.id)) {
         setRevealedContacts([...revealedContacts, selectedBusiness.id]);
-        // Analytics trigger: User showed interest (Soft Lead)
     }
+    if (selectedBusiness) {
+        trackMetric(`reveal_${type}`, selectedBusiness.id);
+    }
+  };
+
+  const handleCopyContact = (text: string, type: 'phone' | 'email') => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(type);
+      if (selectedBusiness) {
+          trackMetric(`copy_${type}`, selectedBusiness.id);
+      }
+      setTimeout(() => setCopiedField(null), 2000);
+    });
   };
 
   return (
@@ -329,10 +350,28 @@ const ExplorePage: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      {!revealedContacts.includes(selectedBusiness.id) && (
-                        <Button size="sm" variant="ghost" onClick={handleRevealContact} className="text-xs gap-1">
+                      
+                      {!revealedContacts.includes(selectedBusiness.id) ? (
+                        <Button size="sm" variant="ghost" onClick={(e) => handleRevealContact(e, 'phone')} className="text-xs gap-1">
                           <Eye className="w-3 h-3" /> Show
                         </Button>
+                      ) : (
+                        <button 
+                          onClick={() => handleCopyContact(selectedBusiness.phone, 'phone')}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-voxa-navy hover:bg-slate-200 rounded-md transition-colors"
+                        >
+                          {copiedField === 'phone' ? (
+                            <>
+                              <Check className="w-3 h-3 text-green-600" />
+                              <span className="text-green-600">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              Copy
+                            </>
+                          )}
+                        </button>
                       )}
                     </div>
 
@@ -351,10 +390,28 @@ const ExplorePage: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      {!revealedContacts.includes(selectedBusiness.id) && (
-                        <Button size="sm" variant="ghost" onClick={handleRevealContact} className="text-xs gap-1">
+                      
+                      {!revealedContacts.includes(selectedBusiness.id) ? (
+                        <Button size="sm" variant="ghost" onClick={(e) => handleRevealContact(e, 'email')} className="text-xs gap-1">
                           <Eye className="w-3 h-3" /> Show
                         </Button>
+                      ) : (
+                        <button 
+                          onClick={() => handleCopyContact(selectedBusiness.email, 'email')}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-voxa-navy hover:bg-slate-200 rounded-md transition-colors"
+                        >
+                          {copiedField === 'email' ? (
+                            <>
+                              <Check className="w-3 h-3 text-green-600" />
+                              <span className="text-green-600">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              Copy
+                            </>
+                          )}
+                        </button>
                       )}
                     </div>
 
