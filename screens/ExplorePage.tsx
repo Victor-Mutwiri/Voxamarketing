@@ -443,7 +443,22 @@ const ExplorePage: React.FC = () => {
 
             {/* Right Col - Messaging Form (Always Visible) */}
             <div className="w-full md:w-2/5 bg-slate-50 p-8 border-l border-slate-100 flex flex-col justify-center">
-              {isMessageSent ? (
+              {isOwner ? (
+                <div className="text-center space-y-4 p-8 bg-white/50 rounded-xl border border-slate-200 border-dashed">
+                  <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Owner Preview</h3>
+                    <p className="text-slate-500 text-sm mt-1">
+                      This is the inquiry form your clients see. It is disabled because you are viewing your own profile.
+                    </p>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => navigate('/business/inquiries')}>
+                    View Inbox
+                  </Button>
+                </div>
+              ) : isMessageSent ? (
                 <div className="text-center space-y-4 animate-in fade-in zoom-in duration-300">
                   <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle className="w-8 h-8" />
