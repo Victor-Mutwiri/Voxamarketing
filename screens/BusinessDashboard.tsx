@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -12,12 +13,13 @@ import {
 import DashboardSidebar from '../components/DashboardSidebar';
 import Button from '../components/Button';
 import { storage } from '../utils/storage';
-import { Business, User as UserType } from '../types';
+import { Business, User as UserType, Inquiry } from '../types';
 
 const BusinessDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [businessData, setBusinessData] = useState<Business | undefined>(undefined);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
 
   useEffect(() => {
     const user = storage.getCurrentUser();
@@ -36,21 +38,21 @@ const BusinessDashboard: React.FC = () => {
     if (user.businessId) {
       const biz = storage.getBusinessById(user.businessId);
       setBusinessData(biz);
+      
+      const inqs = storage.getInquiriesByBusiness(user.businessId);
+      setInquiries(inqs);
     }
   }, [navigate]);
 
-  // Mock Data
+  // Derived Stats
+  const totalInquiries = inquiries.length;
+  const unreadInquiries = inquiries.filter(i => !i.isRead).length;
+
   const stats = [
     { label: 'Total Profile Views', value: '1,245', change: '+12%', icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Contact Reveals', value: '382', change: '+5%', icon: Phone, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Inquiries Received', value: '47', change: '+18%', icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Inquiries Received', value: totalInquiries.toString(), change: '+18%', icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-50' },
     { label: 'Website Clicks', value: '156', change: '+8%', icon: MousePointerClick, color: 'text-orange-600', bg: 'bg-orange-50' },
-  ];
-
-  const recentInquiries = [
-    { id: 1, name: 'Alice Wambui', date: '2 hours ago', message: 'Hi, I would like to inquire about your corporate legal packages...', status: 'New' },
-    { id: 2, name: 'John Otieno', date: '5 hours ago', message: 'Do you handle property dispute cases within Nairobi?', status: 'Read' },
-    { id: 3, name: 'Sarah Jones', date: '1 day ago', message: 'We are looking for a retainer agreement for our startup.', status: 'Replied' },
   ];
 
   return (
@@ -97,28 +99,44 @@ const BusinessDashboard: React.FC = () => {
             {/* Recent Inquiries */}
             <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Recent Inquiries</h3>
-                <a href="#" className="text-sm text-voxa-gold font-medium hover:underline">View All</a>
+                <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Recent Inquiries</h3>
+                    {unreadInquiries > 0 && (
+                        <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full">{unreadInquiries} New</span>
+                    )}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/business/inquiries')} className="text-voxa-gold">View All</Button>
               </div>
               
               <div className="space-y-4">
-                {recentInquiries.map((inquiry) => (
-                  <div key={inquiry.id} className="flex gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors cursor-pointer border border-slate-100 dark:border-slate-600">
-                    <div className="w-10 h-10 rounded-full bg-voxa-navy/10 flex items-center justify-center text-voxa-navy font-bold flex-shrink-0">
-                      {inquiry.name.charAt(0)}
+                {inquiries.length > 0 ? (
+                    inquiries.slice(0, 3).map((inquiry) => (
+                    <div 
+                        key={inquiry.id} 
+                        className={`flex gap-4 p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer border ${!inquiry.isRead ? 'bg-slate-50 dark:bg-slate-700/50 border-voxa-gold/30' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}
+                        onClick={() => navigate('/business/inquiries')}
+                    >
+                        <div className="w-10 h-10 rounded-full bg-voxa-navy/10 flex items-center justify-center text-voxa-navy font-bold flex-shrink-0">
+                        {inquiry.visitorName.charAt(0)}
+                        </div>
+                        <div className="flex-grow">
+                        <div className="flex justify-between items-start mb-1">
+                            <span className="font-semibold text-slate-900 dark:text-white">{inquiry.visitorName}</span>
+                            <span className="text-xs text-slate-400">{new Date(inquiry.date).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-1">{inquiry.message}</p>
+                        </div>
+                        {!inquiry.isRead && (
+                        <div className="w-2 h-2 rounded-full bg-red-500 mt-2 flex-shrink-0"></div>
+                        )}
                     </div>
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-slate-900 dark:text-white">{inquiry.name}</span>
-                        <span className="text-xs text-slate-400">{inquiry.date}</span>
-                      </div>
-                      <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-1">{inquiry.message}</p>
+                    ))
+                ) : (
+                    <div className="text-center py-8 text-slate-400">
+                        <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        <p>No inquiries yet.</p>
                     </div>
-                    {inquiry.status === 'New' && (
-                      <div className="w-2 h-2 rounded-full bg-red-500 mt-2"></div>
-                    )}
-                  </div>
-                ))}
+                )}
               </div>
             </div>
 

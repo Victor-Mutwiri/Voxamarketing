@@ -1,10 +1,12 @@
-import { Business, User, WaitlistEntry, OperatingHours, WeekDay } from '../types';
+
+import { Business, User, WaitlistEntry, OperatingHours, WeekDay, Inquiry } from '../types';
 
 const STORAGE_KEYS = {
   USERS: 'voxa_users',
   BUSINESSES: 'voxa_businesses',
   WAITLIST: 'voxa_waitlist',
-  SESSION: 'voxa_session'
+  SESSION: 'voxa_session',
+  INQUIRIES: 'voxa_inquiries'
 };
 
 const DEFAULT_HOURS: OperatingHours = {
@@ -23,7 +25,7 @@ const INITIAL_WAITLIST: WaitlistEntry[] = [
   { email: 'test@company.com', code: 'TEST-CODE', isUsed: false }
 ];
 
-// Initial Seed Data for Businesses (Moving mock data here for persistence)
+// Initial Seed Data for Businesses
 const INITIAL_BUSINESSES: Business[] = [
   {
     id: 1,
@@ -99,6 +101,30 @@ const INITIAL_BUSINESSES: Business[] = [
   }
 ];
 
+// Initial Seed Inquiries
+const INITIAL_INQUIRIES: Inquiry[] = [
+  {
+    id: 'inq_1',
+    businessId: 1,
+    visitorName: 'Alice Wambui',
+    visitorEmail: 'alice@example.com',
+    visitorPhone: '0711000111',
+    message: 'Hi, I would like to inquire about your corporate legal packages for startups.',
+    date: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+    isRead: false
+  },
+  {
+    id: 'inq_2',
+    businessId: 1,
+    visitorName: 'John Otieno',
+    visitorEmail: 'john@example.com',
+    visitorPhone: '0722000222',
+    message: 'Do you handle property dispute cases within Nairobi?',
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+    isRead: true
+  }
+];
+
 export const storage = {
   // Initialize storage with seed data if empty
   init: () => {
@@ -110,6 +136,9 @@ export const storage = {
     }
     if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.INQUIRIES)) {
+      localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(INITIAL_INQUIRIES));
     }
   },
 
@@ -201,6 +230,11 @@ export const storage = {
         const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
         const updatedBusinesses = businesses.filter(b => b.id !== user.businessId);
         localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(updatedBusinesses));
+        
+        // Remove inquiries
+        const inquiries: Inquiry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || '[]');
+        const updatedInquiries = inquiries.filter(i => i.businessId !== user.businessId);
+        localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(updatedInquiries));
       }
 
       // 3. Remove User
@@ -269,5 +303,41 @@ export const storage = {
   getBusinessById: (id: number): Business | undefined => {
     const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
     return businesses.find(b => b.id === id);
+  },
+
+  // --- Inquiry Methods ---
+
+  saveInquiry: (inquiry: Omit<Inquiry, 'id' | 'date' | 'isRead'>) => {
+    const inquiries: Inquiry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || '[]');
+    const newInquiry: Inquiry = {
+        ...inquiry,
+        id: 'inq_' + Date.now(),
+        date: new Date().toISOString(),
+        isRead: false
+    };
+    inquiries.push(newInquiry);
+    localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
+    return newInquiry;
+  },
+
+  getInquiriesByBusiness: (businessId: number): Inquiry[] => {
+    const inquiries: Inquiry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || '[]');
+    return inquiries
+      .filter(i => i.businessId === businessId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
+  markInquiryAsRead: (inquiryId: string) => {
+    const inquiries: Inquiry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || '[]');
+    const index = inquiries.findIndex(i => i.id === inquiryId);
+    if (index !== -1) {
+      inquiries[index].isRead = true;
+      localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
+    }
+  },
+
+  getUnreadInquiryCount: (businessId: number): number => {
+    const inquiries: Inquiry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || '[]');
+    return inquiries.filter(i => i.businessId === businessId && !i.isRead).length;
   }
 };

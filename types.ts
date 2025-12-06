@@ -1,3 +1,4 @@
+
 export interface NavItem {
   label: string;
   path: string;
@@ -67,4 +68,15 @@ export interface WaitlistEntry {
   email: string;
   code: string;
   isUsed: boolean;
+}
+
+export interface Inquiry {
+  id: string;
+  businessId: number;
+  visitorName: string;
+  visitorEmail: string;
+  visitorPhone: string;
+  message: string;
+  date: string; // ISO String
+  isRead: boolean;
 }

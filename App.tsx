@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './screens/LandingPage';
@@ -7,6 +8,7 @@ import BusinessOnboarding from './screens/BusinessOnboarding';
 import BusinessDashboard from './screens/BusinessDashboard';
 import BusinessProfileEditor from './screens/BusinessProfileEditor';
 import BusinessSettings from './screens/BusinessSettings';
+import BusinessInquiries from './screens/BusinessInquiries';
 
 /**
  * App Component
@@ -26,6 +28,7 @@ const App: React.FC = () => {
         <Route path="/business/dashboard" element={<BusinessDashboard />} />
         <Route path="/business/profile" element={<BusinessProfileEditor />} />
         <Route path="/business/settings" element={<BusinessSettings />} />
+        <Route path="/business/inquiries" element={<BusinessInquiries />} />
         {/* Fallback route redirects to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

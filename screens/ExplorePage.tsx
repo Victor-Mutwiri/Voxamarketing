@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -72,6 +73,15 @@ const ExplorePage: React.FC = () => {
   const handleLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedBusiness) {
+        // Save Inquiry to Storage
+        storage.saveInquiry({
+            businessId: selectedBusiness.id,
+            visitorName: leadFormData.name,
+            visitorEmail: leadFormData.email,
+            visitorPhone: leadFormData.phone,
+            message: leadFormData.message
+        });
+
         trackMetric('send_inquiry', selectedBusiness.id, 'Form Submitted');
         setIsMessageSent(true);
         setTimeout(() => {

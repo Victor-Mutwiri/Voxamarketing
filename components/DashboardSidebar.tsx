@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -15,6 +16,14 @@ import Button from './Button';
 const DashboardSidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const user = storage.getCurrentUser();
+    if (user?.businessId) {
+      setUnreadCount(storage.getUnreadInquiryCount(user.businessId));
+    }
+  }, [location, navigate]); // Re-fetch on route change
 
   const handleLogout = () => {
     storage.logout();
@@ -25,10 +34,9 @@ const DashboardSidebar: React.FC = () => {
 
   const navItems = [
     { label: 'Overview', path: '/business/dashboard', icon: LayoutDashboard },
-    { label: 'Analytics', path: '/business/analytics', icon: BarChart3 }, // Placeholder path
-    { label: 'Inquiries', path: '/business/inquiries', icon: MessageSquare, badge: 3 }, // Placeholder path
+    { label: 'Inquiries', path: '/business/inquiries', icon: MessageSquare, badge: unreadCount },
     { label: 'My Profile', path: '/business/profile', icon: User },
-    { label: 'Settings', path: '/business/settings', icon: Settings }, // Placeholder path
+    { label: 'Settings', path: '/business/settings', icon: Settings },
   ];
 
   return (
@@ -53,11 +61,11 @@ const DashboardSidebar: React.FC = () => {
             >
               <item.icon className={`w-5 h-5 ${isActive(item.path) ? 'text-voxa-gold' : ''}`} />
               <span className="font-medium">{item.label}</span>
-              {item.badge && (
+              {item.badge ? (
                 <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {item.badge}
                 </span>
-              )}
+              ) : null}
             </button>
           ))}
         </nav>
@@ -79,6 +87,12 @@ const DashboardSidebar: React.FC = () => {
         <div className="flex gap-2">
             <Button variant="ghost" className="text-white p-2" onClick={() => navigate('/business/dashboard')}>
                 <LayoutDashboard className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" className="text-white p-2 relative" onClick={() => navigate('/business/inquiries')}>
+                <MessageSquare className="w-5 h-5" />
+                {unreadCount > 0 && (
+                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
             </Button>
              <Button variant="ghost" className="text-white p-2" onClick={() => navigate('/business/profile')}>
                 <User className="w-5 h-5" />
