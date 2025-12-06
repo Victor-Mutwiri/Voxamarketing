@@ -1,8 +1,8 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, 
-  CheckCircle, 
   Search, 
   Scale, 
   Stethoscope, 
@@ -12,12 +12,16 @@ import {
   Briefcase,
   Star,
   ShieldCheck,
-  TrendingUp
+  TrendingUp,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
 import { INDUSTRIES, STATISTICS, TESTIMONIALS } from '../constants';
+import AI from '../utils/ai';
+import { storage } from '../utils/storage';
 
 const iconMap: Record<string, React.ElementType> = {
   Scale, Stethoscope, HardHat, Factory, Compass, Briefcase
@@ -27,6 +31,10 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [entityType, setEntityType] = useState<string>('Business');
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleWaitlistSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,12 +42,29 @@ const LandingPage: React.FC = () => {
     setEmail('');
   };
 
+  const handleSmartSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    try {
+      const businesses = storage.getBusinesses();
+      const results = await AI.search(searchQuery, businesses);
+      navigate('/explore', { state: { aiResults: results, query: searchQuery } });
+    } catch (error) {
+      console.error("Search failed", error);
+      alert("AI Search is initializing. Please try again in a few seconds.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
         {/* Background elements */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-slate-100 -z-20" />
         <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-voxa-gold/10 rounded-full blur-3xl -z-10" />
@@ -56,27 +81,45 @@ const LandingPage: React.FC = () => {
             </h1>
             
             <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              Voxa Marketing is the exclusive gateway to Kenya's top-tier professionals and enterprises. From Law to Manufacturing, find the best of the best.
+              Find Kenya's top-tier professionals using our AI-powered concierge. Simply describe what you need, and we'll match you with the best.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                className="w-full sm:w-auto gap-2 group"
-                onClick={() => navigate('/explore')}
-              >
-                Start Exploring
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="w-full sm:w-auto"
-                onClick={() => document.getElementById('waitlist-section')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                List Your Business
-              </Button>
+            {/* Smart Search Bar */}
+            <div className="max-w-2xl mx-auto pt-6 relative z-20">
+              <form onSubmit={handleSmartSearch} className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-voxa-gold to-purple-500 rounded-xl blur opacity-25 group-hover:opacity-40 transition-opacity"></div>
+                <div className="relative bg-white p-2 rounded-xl shadow-xl flex items-center">
+                  <div className="pl-4 text-voxa-gold">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <input 
+                    type="text" 
+                    className="flex-grow p-4 text-lg outline-none text-slate-800 placeholder:text-slate-400"
+                    placeholder="E.g. I need a pediatric dentist in Westlands open on weekends..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="rounded-lg px-8 gap-2"
+                    disabled={isSearching}
+                  >
+                    {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+                    Search
+                  </Button>
+                </div>
+              </form>
+              <p className="text-xs text-slate-400 mt-3 flex justify-center items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                AI Search Active
+              </p>
+            </div>
+
+            <div className="pt-8">
+                <Button variant="ghost" className="text-slate-500" onClick={() => document.getElementById('waitlist-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                    Are you a top-tier business? List with us <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
             </div>
           </div>
         </div>

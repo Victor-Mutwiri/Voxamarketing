@@ -43,7 +43,8 @@ const INITIAL_BUSINESSES: Business[] = [
     isVerified: true,
     isVisible: true,
     specialties: ["Mergers & Acquisitions", "Dispute Resolution", "Intellectual Property"],
-    operatingHours: DEFAULT_HOURS
+    operatingHours: DEFAULT_HOURS,
+    entityType: 'Company'
   },
   {
     id: 2,
@@ -61,7 +62,8 @@ const INITIAL_BUSINESSES: Business[] = [
     isVerified: true,
     isVisible: true,
     specialties: ["Structural Audit", "Road Construction", "Water Systems"],
-    operatingHours: DEFAULT_HOURS
+    operatingHours: DEFAULT_HOURS,
+    entityType: 'Company'
   },
   {
     id: 3,
@@ -79,7 +81,8 @@ const INITIAL_BUSINESSES: Business[] = [
     isVerified: true,
     isVisible: true,
     specialties: ["Cardiac Care", "Advanced Imaging", "Executive Checkups"],
-    operatingHours: DEFAULT_HOURS
+    operatingHours: DEFAULT_HOURS,
+    entityType: 'Organization'
   },
   {
     id: 4,
@@ -97,7 +100,27 @@ const INITIAL_BUSINESSES: Business[] = [
     isVerified: true,
     isVisible: true,
     specialties: ["Eco-friendly Design", "High-rise Developments", "Interior Architecture"],
-    operatingHours: DEFAULT_HOURS
+    operatingHours: DEFAULT_HOURS,
+    entityType: 'Business'
+  },
+  {
+    id: 5,
+    name: "Dr. James Kamau",
+    industry: "Medicine & Health",
+    location: "Parklands, Nairobi",
+    rating: 4.9,
+    reviews: 45,
+    tags: ["Pediatrics", "Consultant"],
+    image: "https://picsum.photos/400/300?random=14",
+    fullDescription: "Dedicated pediatric consultant with 15 years experience in child healthcare. Specializing in early childhood development and pediatric neurology.",
+    phone: "+254 722 999 888",
+    email: "jkamau@health.com",
+    website: "www.drjameskamau.com",
+    isVerified: true,
+    isVisible: true,
+    specialties: ["Pediatrics", "Child Neurology"],
+    operatingHours: DEFAULT_HOURS,
+    entityType: 'Consultant'
   }
 ];
 

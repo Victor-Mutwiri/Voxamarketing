@@ -35,6 +35,8 @@ export interface DailyHours {
 
 export type OperatingHours = Record<WeekDay, DailyHours>;
 
+export type EntityType = 'Business' | 'Company' | 'Organization' | 'Consultant';
+
 export interface Business {
   id: number;
   name: string;
@@ -52,6 +54,10 @@ export interface Business {
   isVisible: boolean;
   specialties: string[];
   operatingHours?: OperatingHours;
+  entityType?: EntityType;
+  // AI score (optional, injected during search)
+  score?: number;
+  matchScore?: number;
 }
 
 export interface User {

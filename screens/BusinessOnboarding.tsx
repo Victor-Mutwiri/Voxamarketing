@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -16,11 +17,12 @@ import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import { INDUSTRIES, INDUSTRY_SPECIALTIES } from '../constants';
 import { storage } from '../utils/storage';
+import { EntityType } from '../types';
 
 type OnboardingStep = 1 | 2 | 3 | 4;
 
 interface OnboardingData {
-  entityType: string;
+  entityType: EntityType | '';
   name: string;
   industry: string;
   website: string;
@@ -89,7 +91,8 @@ const BusinessOnboarding: React.FC = () => {
            email: data.email,
            website: data.website,
            image: data.logo || "https://picsum.photos/400/300?random=100", // Fallback image if no logo
-           tags: data.specialties.slice(0, 3) // Use first 3 specialties as tags
+           tags: data.specialties.slice(0, 3), // Use first 3 specialties as tags
+           entityType: data.entityType as EntityType
         });
         alert('Profile created successfully! Redirecting to dashboard...');
         navigate('/business/dashboard');
@@ -158,7 +161,7 @@ const BusinessOnboarding: React.FC = () => {
                   {['Business', 'Company', 'Organization', 'Consultant'].map((type) => (
                     <button
                       key={type}
-                      onClick={() => setData({ ...data, entityType: type })}
+                      onClick={() => setData({ ...data, entityType: type as EntityType })}
                       className={`p-6 rounded-xl border-2 text-left transition-all hover:shadow-md ${
                         data.entityType === type 
                           ? 'border-voxa-gold bg-voxa-gold/5 ring-1 ring-voxa-gold' 

@@ -12,7 +12,8 @@
     "react": "^19.2.1",
     "lucide-react": "^0.555.0",
     "react-router-dom": "^7.10.0",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.1",
+    "@xenova/transformers": "2.16.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
