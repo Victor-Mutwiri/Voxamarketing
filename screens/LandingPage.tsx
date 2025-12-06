@@ -104,16 +104,18 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white overflow-x-hidden">
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-visible">
-        {/* Background elements */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-slate-100 -z-20" />
-        <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-voxa-gold/10 rounded-full blur-3xl -z-10" />
+      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24">
+        {/* Background wrapper to prevent horizontal scroll from blobs */}
+        <div className="absolute inset-0 overflow-hidden -z-10">
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-slate-100" />
+            <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-voxa-gold/10 rounded-full blur-3xl" />
+        </div>
         
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-voxa-navy/5 border border-voxa-navy/10 text-voxa-navy font-medium text-sm animate-fade-in-up">
               <Star className="w-4 h-4 text-voxa-gold fill-current" />
