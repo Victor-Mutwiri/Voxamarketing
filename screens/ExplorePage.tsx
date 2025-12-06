@@ -239,9 +239,9 @@ const ExplorePage: React.FC = () => {
               {filteredBusinesses.map((biz) => (
                 <div key={biz.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full relative ${biz.score && biz.score > 0.8 ? 'border-voxa-gold/40 shadow-voxa-gold/10' : 'border-slate-100'}`}>
                   {/* AI Ranking Badge */}
-                  {aiResults && biz.score && (
+                  {aiResults && biz.matchScore && (
                       <div className="absolute top-3 left-3 z-10 bg-voxa-gold text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> {Math.round(biz.score * 100)}% Match
+                          <Sparkles className="w-3 h-3" /> {Math.round(biz.matchScore * 100)}% Match
                       </div>
                   )}
 

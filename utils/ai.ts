@@ -43,11 +43,11 @@ class AI {
       case 'Organization':
         return 1.0;
       case 'Business':
-        return 0.8;
+        return 0.9;
       case 'Consultant':
-        return 0.6;
+        return 0.8;
       default:
-        return 0.6; // Default to lowest for legacy/undefined
+        return 0.5;
     }
   }
 
@@ -55,7 +55,6 @@ class AI {
     const queryEmbedding = await this.generateEmbedding(query);
     
     // We need to generate embeddings for businesses on the fly since we don't have a backend DB with vectors yet.
-    // In a real app with Supabase, this happens on the DB side via pgvector.
     
     const scoredBusinesses = await Promise.all(businesses.map(async (biz) => {
       // Create a rich context string for the business
@@ -66,17 +65,17 @@ class AI {
       
       const entityWeight = this.getEntityWeight(biz.entityType);
       
-      // Ranking Logic:
-      // 70% based on semantic relevance (AI)
-      // 30% based on business tier (Premium Listing)
-      const finalScore = (similarity * 0.7) + (entityWeight * 0.3);
+      // Ranking Logic (Updated):
+      // 85% based on semantic relevance (AI) - Increased from 70%
+      // 15% based on business tier (Premium Listing) - Decreased from 30%
+      const finalScore = (similarity * 0.85) + (entityWeight * 0.15);
 
       return { ...biz, score: finalScore, matchScore: similarity };
     }));
 
     // Filter out very low relevance (noise)
-    // We check matchScore (pure similarity) to ensure we don't just show Companies that are irrelevant
-    const relevant = scoredBusinesses.filter(b => b.matchScore && b.matchScore > 0.15);
+    // MIN_RELEVANCE_THRESHOLD set to 0.25 to strict filter out irrelevant results
+    const relevant = scoredBusinesses.filter(b => b.matchScore && b.matchScore > 0.25);
 
     // Sort by Final Score (Descending)
     return relevant.sort((a, b) => (b.score || 0) - (a.score || 0));

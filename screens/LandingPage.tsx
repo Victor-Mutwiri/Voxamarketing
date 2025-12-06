@@ -43,6 +43,7 @@ const LandingPage: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
   
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Close search results if clicking outside
   useEffect(() => {
@@ -54,6 +55,16 @@ const LandingPage: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Auto-scroll to results when they appear
+  useEffect(() => {
+    if (hasSearched && searchResults.length > 0 && resultsRef.current) {
+        // Small delay to ensure render layout is stable
+        setTimeout(() => {
+            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+  }, [hasSearched, searchResults]);
 
   const handleWaitlistSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +166,7 @@ const LandingPage: React.FC = () => {
 
               {/* Inline Search Results Panel */}
               {hasSearched && (
-                <div className="absolute top-full left-0 right-0 bg-white rounded-b-xl shadow-2xl border-t-0 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 z-40">
+                <div ref={resultsRef} className="absolute top-full left-0 right-0 bg-white rounded-b-xl shadow-2xl border-t-0 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 z-40">
                     
                     {searchResults.length > 0 ? (
                         <>
@@ -174,9 +185,9 @@ const LandingPage: React.FC = () => {
                                         <div className="flex-grow">
                                             <div className="flex justify-between items-start">
                                                 <h4 className="font-bold text-slate-900 group-hover:text-voxa-gold transition-colors">{result.name}</h4>
-                                                {result.score && (
+                                                {result.matchScore && (
                                                     <span className="bg-voxa-gold text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                                                        {Math.round(result.score * 100)}% Match
+                                                        {Math.round(result.matchScore * 100)}% Match
                                                     </span>
                                                 )}
                                             </div>
