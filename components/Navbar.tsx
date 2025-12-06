@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Hexagon } from 'lucide-react';
 import { NAV_ITEMS } from '../constants';
 import Button from './Button';
+import { storage } from '../utils/storage';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Handle scroll effect for sticky navbar
   useEffect(() => {
@@ -18,7 +21,21 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Check auth state on mount and route change
+  useEffect(() => {
+    setCurrentUser(storage.getCurrentUser());
+    setIsOpen(false); // Close mobile menu on route change
+  }, [location]);
+
   const toggleMenu = () => setIsOpen(!isOpen);
+
+  const handlePortalClick = () => {
+    if (currentUser) {
+      navigate('/business/dashboard');
+    } else {
+      navigate('/auth');
+    }
+  };
 
   return (
     <nav 
@@ -62,9 +79,9 @@ const Navbar: React.FC = () => {
             <Button 
               variant="secondary" 
               size="sm"
-              onClick={() => navigate('/auth')}
+              onClick={handlePortalClick}
             >
-              Business Portal
+              {currentUser ? 'Dashboard' : 'Business Portal'}
             </Button>
           </div>
 
@@ -101,10 +118,10 @@ const Navbar: React.FC = () => {
             className="w-full"
             onClick={() => {
               setIsOpen(false);
-              navigate('/auth');
+              handlePortalClick();
             }}
           >
-            Business Portal
+             {currentUser ? 'Go to Dashboard' : 'Business Portal'}
           </Button>
         </div>
       )}

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { INDUSTRIES } from '../constants';
-import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye, Copy, Check, Clock } from 'lucide-react';
+import { Search, MapPin, Star, Filter, X, Phone, Mail, Globe, CheckCircle, Send, User, ChevronRight, Eye, Copy, Check, Clock, Edit } from 'lucide-react';
 import Button from '../components/Button';
 import { Business, WeekDay, DailyHours } from '../types';
 import { storage } from '../utils/storage';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const ExplorePage: React.FC = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -14,6 +14,10 @@ const ExplorePage: React.FC = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string>('All');
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Auth State
+  const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
 
   // Interaction State
   const [revealedContacts, setRevealedContacts] = useState<number[]>([]); // IDs of businesses where contact is revealed
@@ -25,6 +29,9 @@ const ExplorePage: React.FC = () => {
     // Fetch businesses from our storage (which includes mock seeds + new users)
     const data = storage.getBusinesses();
     setBusinesses(data);
+
+    // Refresh user state
+    setCurrentUser(storage.getCurrentUser());
 
     // Handle "Preview Mode" from query param
     const previewId = searchParams.get('preview');
@@ -92,6 +99,8 @@ const ExplorePage: React.FC = () => {
       setTimeout(() => setCopiedField(null), 2000);
     });
   };
+
+  const isOwner = currentUser && selectedBusiness && currentUser.businessId === selectedBusiness.id;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -243,12 +252,26 @@ const ExplorePage: React.FC = () => {
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedBusiness(null)}></div>
           
           <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl flex flex-col md:flex-row">
+            
+            {/* Close Button */}
             <button 
               onClick={() => setSelectedBusiness(null)}
-              className="absolute top-4 right-4 p-2 bg-white/80 rounded-full hover:bg-slate-100 transition-colors z-20"
+              className="absolute top-4 right-4 p-2 bg-white/80 rounded-full hover:bg-slate-100 transition-colors z-20 shadow-sm"
             >
               <X className="w-5 h-5 text-slate-600" />
             </button>
+
+            {/* Owner Controls (Only visible if viewing own profile) */}
+            {isOwner && (
+              <div className="absolute top-4 left-4 z-20 flex flex-col sm:flex-row gap-2">
+                <Button size="sm" variant="primary" onClick={() => navigate('/business/dashboard')} className="shadow-lg">
+                   Back to Dashboard
+                </Button>
+                 <Button size="sm" variant="secondary" onClick={() => navigate('/business/profile')} className="shadow-lg gap-2">
+                   <Edit className="w-3 h-3" /> Edit
+                </Button>
+              </div>
+            )}
 
             {/* Left Col - Business Info & Contacts */}
             <div className="w-full md:w-3/5 p-0 flex flex-col">

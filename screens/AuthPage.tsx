@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, 
@@ -24,6 +24,19 @@ const AuthPage: React.FC = () => {
     confirmPassword: '',
     code: ''
   });
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const user = storage.getCurrentUser();
+    if (user) {
+      // User is already logged in, redirect them
+      if (user.isProfileComplete) {
+        navigate('/business/dashboard', { replace: true });
+      } else {
+        navigate('/business/onboarding', { replace: true });
+      }
+    }
+  }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
