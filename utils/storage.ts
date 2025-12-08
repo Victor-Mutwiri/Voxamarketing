@@ -1,14 +1,17 @@
 
 
 
-import { Business, User, WaitlistEntry, OperatingHours, WeekDay, Inquiry } from '../types';
+
+
+import { Business, User, WaitlistEntry, OperatingHours, WeekDay, Inquiry, AnalyticsEvent, MetricType } from '../types';
 
 const STORAGE_KEYS = {
   USERS: 'voxa_users',
   BUSINESSES: 'voxa_businesses',
   WAITLIST: 'voxa_waitlist',
   SESSION: 'voxa_session',
-  INQUIRIES: 'voxa_inquiries'
+  INQUIRIES: 'voxa_inquiries',
+  ANALYTICS: 'voxa_analytics'
 };
 
 const DEFAULT_HOURS: OperatingHours = {
@@ -57,7 +60,9 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.nairobilegal.co.ke",
     isVerified: true,
     isVisible: true,
+    joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 365).toISOString(), // 1 year ago
     accountStatus: 'active',
+    metrics: { views: 1245, contactReveals: 382, websiteClicks: 156 },
     specialties: ["Mergers & Acquisitions", "Dispute Resolution", "Intellectual Property"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Company'
@@ -77,7 +82,9 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.apexengineering.com",
     isVerified: true,
     isVisible: true,
+    joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 200).toISOString(),
     accountStatus: 'active',
+    metrics: { views: 950, contactReveals: 210, websiteClicks: 84 },
     specialties: ["Structural Audit", "Road Construction", "Water Systems"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Company'
@@ -97,7 +104,9 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.medicare.co.ke",
     isVerified: true,
     isVisible: true,
+    joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 400).toISOString(),
     accountStatus: 'active',
+    metrics: { views: 2100, contactReveals: 640, websiteClicks: 420 },
     specialties: ["Cardiac Care", "Advanced Imaging", "Executive Checkups"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Organization'
@@ -117,7 +126,9 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.buildright.com",
     isVerified: true,
     isVisible: true,
+    joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
     accountStatus: 'active',
+    metrics: { views: 560, contactReveals: 120, websiteClicks: 45 },
     specialties: ["Eco-friendly Design", "High-rise Developments", "Interior Architecture"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Business'
@@ -137,7 +148,9 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.drjameskamau.com",
     isVerified: true,
     isVisible: true,
+    joinedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
     accountStatus: 'active',
+    metrics: { views: 320, contactReveals: 85, websiteClicks: 30 },
     specialties: ["Pediatrics", "Child Neurology"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Consultant'
@@ -168,6 +181,11 @@ const INITIAL_INQUIRIES: Inquiry[] = [
   }
 ];
 
+// Helper to generate random past date for mock analytics
+const getRandomDate = (start: Date, end: Date) => {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString();
+};
+
 export const storage = {
   // Initialize storage with seed data if empty
   init: () => {
@@ -182,6 +200,46 @@ export const storage = {
     }
     if (!localStorage.getItem(STORAGE_KEYS.INQUIRIES)) {
       localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(INITIAL_INQUIRIES));
+    }
+
+    // Backfill Analytics Events based on Business Metrics totals
+    if (!localStorage.getItem(STORAGE_KEYS.ANALYTICS)) {
+        const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
+        const events: AnalyticsEvent[] = [];
+        const now = new Date();
+        
+        businesses.forEach(biz => {
+            const joined = new Date(biz.joinedAt);
+            
+            // Generate View Events
+            for (let i = 0; i < (biz.metrics?.views || 0); i++) {
+                events.push({
+                    id: `evt_${Date.now()}_${Math.random()}`,
+                    businessId: biz.id,
+                    type: 'view',
+                    timestamp: getRandomDate(joined, now)
+                });
+            }
+            // Generate Reveal Events
+            for (let i = 0; i < (biz.metrics?.contactReveals || 0); i++) {
+                events.push({
+                    id: `evt_${Date.now()}_${Math.random()}`,
+                    businessId: biz.id,
+                    type: 'contact_reveal',
+                    timestamp: getRandomDate(joined, now)
+                });
+            }
+             // Generate Click Events
+             for (let i = 0; i < (biz.metrics?.websiteClicks || 0); i++) {
+                events.push({
+                    id: `evt_${Date.now()}_${Math.random()}`,
+                    businessId: biz.id,
+                    type: 'website_click',
+                    timestamp: getRandomDate(joined, now)
+                });
+            }
+        });
+        localStorage.setItem(STORAGE_KEYS.ANALYTICS, JSON.stringify(events));
     }
   },
 
@@ -343,8 +401,10 @@ export const storage = {
       reviews: 0,
       isVerified: false,
       isVisible: true,
+      joinedAt: new Date().toISOString(),
       accountStatus: 'active',
       operatingHours: DEFAULT_HOURS,
+      metrics: { views: 0, contactReveals: 0, websiteClicks: 0 },
       tags: [],
       ...data
     } as Business;
@@ -399,6 +459,43 @@ export const storage = {
       return businesses[index];
     }
     return null;
+  },
+
+  // Analytics: Increment Metric & Log Event
+  incrementBusinessMetric: (businessId: number, metric: 'views' | 'contactReveals' | 'websiteClicks') => {
+    // 1. Update Totals on Business Object (for fast list views)
+    const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
+    const index = businesses.findIndex(b => b.id === businessId);
+    if (index !== -1) {
+      if (!businesses[index].metrics) {
+        businesses[index].metrics = { views: 0, contactReveals: 0, websiteClicks: 0 };
+      }
+      const currentVal = businesses[index].metrics![metric] || 0;
+      businesses[index].metrics![metric] = currentVal + 1;
+      localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(businesses));
+    }
+
+    // 2. Log Granular Event (for time-based filtering)
+    const analytics: AnalyticsEvent[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANALYTICS) || '[]');
+    
+    let eventType: MetricType = 'view';
+    if (metric === 'contactReveals') eventType = 'contact_reveal';
+    if (metric === 'websiteClicks') eventType = 'website_click';
+
+    const newEvent: AnalyticsEvent = {
+        id: `evt_${Date.now()}_${Math.random()}`,
+        businessId,
+        type: eventType,
+        timestamp: new Date().toISOString()
+    };
+    analytics.push(newEvent);
+    localStorage.setItem(STORAGE_KEYS.ANALYTICS, JSON.stringify(analytics));
+  },
+
+  // Analytics: Get Events for Business
+  getAnalyticsEvents: (businessId: number): AnalyticsEvent[] => {
+    const analytics: AnalyticsEvent[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ANALYTICS) || '[]');
+    return analytics.filter(e => e.businessId === businessId);
   },
 
   // Data: Get All Businesses

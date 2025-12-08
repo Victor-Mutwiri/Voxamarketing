@@ -1,11 +1,14 @@
 
 
+
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, MapPin, Star, CheckCircle, Clock, 
   Phone, Mail, Globe, Eye, Copy, Check, 
-  User, Send, Edit, AlertCircle, Building2, Briefcase, Lock 
+  User, Send, Edit, AlertCircle, Building2, Briefcase, Lock,
+  ExternalLink
 } from 'lucide-react';
 import Button from '../Button';
 import { Business, DailyHours, User as UserType } from '../../types';
@@ -64,6 +67,10 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
       trackMetric(`copy_${type}`, business.id);
       setTimeout(() => setCopiedField(null), 2000);
     });
+  };
+
+  const handleWebsiteClick = () => {
+    trackMetric('website_click', business.id);
   };
 
   const validateForm = () => {
@@ -151,6 +158,11 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
 
     trackMetric('send_inquiry', business.id, senderBusiness ? 'B2B Inquiry' : 'Form Submitted');
     setIsMessageSent(true);
+  };
+
+  const formatWebsiteUrl = (url: string) => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `https://${url}`;
   };
 
   return (
@@ -327,9 +339,18 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-voxa-navy shadow-sm">
                     <Globe className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="flex-grow">
                     <p className="text-xs text-slate-500 uppercase tracking-wide">Website</p>
-                    <p className="font-medium text-slate-900">{business.website}</p>
+                    <a 
+                        href={formatWebsiteUrl(business.website)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={handleWebsiteClick}
+                        className="font-medium text-voxa-navy hover:text-voxa-gold hover:underline flex items-center gap-1"
+                    >
+                        {business.website}
+                        <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
                 </div>
               </div>

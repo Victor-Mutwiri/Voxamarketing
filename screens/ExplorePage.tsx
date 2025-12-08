@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -46,6 +48,8 @@ const ExplorePage: React.FC = () => {
       const biz = data.find(b => b.id.toString() === previewId);
       if (biz) {
         setSelectedBusiness(biz);
+        // Track initial view from preview
+        trackMetric('profile_view', biz.id);
       }
     }
   }, [searchParams, location.state]);
@@ -78,6 +82,15 @@ const ExplorePage: React.FC = () => {
   // Analytics Simulation Function
   const trackMetric = (action: string, businessId: number, details?: string) => {
     console.log(`[ANALYTICS] Action: ${action} | BusinessID: ${businessId} | Details: ${details || 'N/A'}`);
+    
+    // Update Storage for persistence
+    if (action === 'profile_view') {
+        storage.incrementBusinessMetric(businessId, 'views');
+    } else if (action === 'website_click') {
+        storage.incrementBusinessMetric(businessId, 'websiteClicks');
+    } else if (action.startsWith('reveal_') || action.startsWith('copy_')) {
+        storage.incrementBusinessMetric(businessId, 'contactReveals');
+    }
   };
 
   const handleOpenProfile = (business: Business) => {

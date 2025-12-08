@@ -38,6 +38,21 @@ export type OperatingHours = Record<WeekDay, DailyHours>;
 
 export type EntityType = 'Business' | 'Company' | 'Organization' | 'Consultant';
 
+export interface BusinessMetrics {
+  views: number;
+  contactReveals: number;
+  websiteClicks: number;
+}
+
+export type MetricType = 'view' | 'contact_reveal' | 'website_click';
+
+export interface AnalyticsEvent {
+  id: string;
+  businessId: number;
+  type: MetricType;
+  timestamp: string; // ISO String
+}
+
 export interface Business {
   id: number;
   name: string;
@@ -53,7 +68,9 @@ export interface Business {
   website: string;
   isVerified: boolean;
   isVisible: boolean;
+  joinedAt: string; // ISO Date for when they signed up
   accountStatus?: 'active' | 'suspended' | 'banned';
+  metrics?: BusinessMetrics;
   specialties: string[];
   operatingHours?: OperatingHours;
   entityType?: EntityType;

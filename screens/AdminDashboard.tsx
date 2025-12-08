@@ -1,7 +1,11 @@
 
 
 
-import React, { useState, useEffect } from 'react';
+
+
+
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Lock, 
@@ -24,11 +28,14 @@ import {
   Eye,
   Activity,
   CheckCircle,
-  XCircle
+  XCircle,
+  MousePointerClick,
+  Phone
 } from 'lucide-react';
 import Button from '../components/Button';
+import MetricsFilter from '../components/dashboard/MetricsFilter';
 import { storage } from '../utils/storage';
-import { WaitlistEntry, Business, Inquiry } from '../types';
+import { WaitlistEntry, Business, Inquiry, AnalyticsEvent } from '../types';
 
 const ADMIN_PASSCODE = 'VOXA-ADMIN-2024';
 
@@ -47,8 +54,17 @@ const AdminDashboard: React.FC = () => {
   // Data
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [businessInquiries, setBusinessInquiries] = useState<Inquiry[]>([]); // For Detail View
+  
+  // Detail View Data
+  const [businessInquiries, setBusinessInquiries] = useState<Inquiry[]>([]); 
+  const [businessAnalytics, setBusinessAnalytics] = useState<AnalyticsEvent[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Date Filtering State for Detail View
+  const [dateRange, setDateRange] = useState<{ start: Date, end: Date }>({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    end: new Date()
+  });
 
   // Load Admin Session
   useEffect(() => {
@@ -98,9 +114,12 @@ const AdminDashboard: React.FC = () => {
   // Business Actions
   const openBusinessDetail = (biz: Business) => {
     setSelectedBusiness(biz);
-    // Fetch stats for this business
+    // Fetch detailed data
     const inquiries = storage.getInquiriesByBusiness(biz.id);
     setBusinessInquiries(inquiries);
+    const analytics = storage.getAnalyticsEvents(biz.id);
+    setBusinessAnalytics(analytics);
+
     setCurrentView('business_detail');
   };
 
@@ -114,6 +133,36 @@ const AdminDashboard: React.FC = () => {
         refreshData(); // Refresh list
     }
   };
+
+  const handleFilterChange = (start: Date, end: Date) => {
+    setDateRange({ start, end });
+  };
+
+  // Filter Logic for Detail View
+  const filteredMetrics = useMemo(() => {
+    const startMs = dateRange.start.getTime();
+    const endMs = dateRange.end.getTime();
+
+    // Filter Inquiries
+    const filteredInquiries = businessInquiries.filter(i => {
+        const time = new Date(i.date).getTime();
+        return time >= startMs && time <= endMs;
+    });
+
+    // Filter Analytics
+    const filteredAnalytics = businessAnalytics.filter(e => {
+        const time = new Date(e.timestamp).getTime();
+        return time >= startMs && time <= endMs;
+    });
+
+    return {
+        inquiries: filteredInquiries.length,
+        views: filteredAnalytics.filter(e => e.type === 'view').length,
+        reveals: filteredAnalytics.filter(e => e.type === 'contact_reveal').length,
+        clicks: filteredAnalytics.filter(e => e.type === 'website_click').length,
+    };
+  }, [dateRange, businessInquiries, businessAnalytics]);
+
 
   // --- Auth Screen ---
   if (!isAuthenticated) {
@@ -378,21 +427,26 @@ const AdminDashboard: React.FC = () => {
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold text-slate-700">Business Name</th>
-                                        <th className="px-6 py-4 font-semibold text-slate-700">Industry</th>
-                                        <th className="px-6 py-4 font-semibold text-slate-700">Location</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
+                                        {/* New Analytics Columns */}
+                                        <th className="px-6 py-4 font-semibold text-slate-700 text-center">Views</th>
+                                        <th className="px-6 py-4 font-semibold text-slate-700 text-center">Reveals</th>
+                                        <th className="px-6 py-4 font-semibold text-slate-700 text-center">Clicks</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700 text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {filteredBusinesses.map((biz) => (
                                         <tr key={biz.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => openBusinessDetail(biz)}>
-                                            <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-                                                <img src={biz.image} alt="" className="w-8 h-8 rounded object-cover" />
-                                                {biz.name}
+                                            <td className="px-6 py-4 font-medium text-slate-900">
+                                                <div className="flex items-center gap-3">
+                                                    <img src={biz.image} alt="" className="w-8 h-8 rounded object-cover" />
+                                                    <div>
+                                                        <div className="font-semibold">{biz.name}</div>
+                                                        <div className="text-xs text-slate-500">{biz.industry}</div>
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600">{biz.industry}</td>
-                                            <td className="px-6 py-4 text-slate-600">{biz.location}</td>
                                             <td className="px-6 py-4">
                                                 {biz.accountStatus === 'suspended' ? (
                                                      <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-bold">
@@ -408,6 +462,11 @@ const AdminDashboard: React.FC = () => {
                                                     </span>
                                                 )}
                                             </td>
+                                            {/* Metric Cells (Total Lifetime) */}
+                                            <td className="px-6 py-4 text-center text-slate-600">{biz.metrics?.views || 0}</td>
+                                            <td className="px-6 py-4 text-center text-slate-600">{biz.metrics?.contactReveals || 0}</td>
+                                            <td className="px-6 py-4 text-center text-slate-600">{biz.metrics?.websiteClicks || 0}</td>
+                                            
                                             <td className="px-6 py-4 text-right">
                                                 <Button size="sm" variant="ghost" className="text-slate-500 hover:text-slate-900">Manage</Button>
                                             </td>
@@ -489,38 +548,73 @@ const AdminDashboard: React.FC = () => {
 
                             {/* Right Panel: Metrics */}
                             <div className="md:w-2/3 space-y-6">
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="flex justify-end">
+                                    <MetricsFilter 
+                                        joinedAt={selectedBusiness.joinedAt}
+                                        onFilterChange={handleFilterChange}
+                                    />
+                                </div>
+
+                                {/* Performance Cards */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                        <p className="text-slate-500 text-xs uppercase font-bold">Inquiries</p>
-                                        <p className="text-2xl font-bold text-slate-900">{businessInquiries.length}</p>
+                                        <div className="flex items-center gap-2 mb-2 text-blue-600">
+                                            <Eye className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase">Views</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-slate-900">{filteredMetrics.views}</p>
                                     </div>
                                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                        <p className="text-slate-500 text-xs uppercase font-bold">Unread</p>
-                                        <p className="text-2xl font-bold text-slate-900">{businessInquiries.filter(i => !i.isRead).length}</p>
+                                        <div className="flex items-center gap-2 mb-2 text-green-600">
+                                            <Phone className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase">Reveals</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-slate-900">{filteredMetrics.reveals}</p>
+                                    </div>
+                                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                        <div className="flex items-center gap-2 mb-2 text-orange-600">
+                                            <MousePointerClick className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase">Clicks</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-slate-900">{filteredMetrics.clicks}</p>
                                     </div>
                                     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                        <p className="text-slate-500 text-xs uppercase font-bold">Rating</p>
-                                        <p className="text-2xl font-bold text-slate-900">{selectedBusiness.rating}</p>
+                                        <div className="flex items-center gap-2 mb-2 text-purple-600">
+                                            <Mail className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase">Inquiries</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-slate-900">{filteredMetrics.inquiries}</p>
                                     </div>
                                 </div>
 
                                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                                     <div className="p-4 border-b border-slate-200 bg-slate-50">
-                                        <h3 className="font-bold text-slate-800">Recent Activity Log (Inquiries)</h3>
+                                        <h3 className="font-bold text-slate-800">Recent Inquiries (Filtered)</h3>
                                     </div>
                                     <div className="divide-y divide-slate-100">
                                         {businessInquiries.length === 0 ? (
-                                            <div className="p-8 text-center text-slate-400 text-sm">No activity recorded.</div>
+                                            <div className="p-8 text-center text-slate-400 text-sm">No inquiries recorded.</div>
                                         ) : (
-                                            businessInquiries.slice(0, 5).map(inq => (
-                                                <div key={inq.id} className="p-4 flex justify-between items-start">
-                                                    <div>
-                                                        <p className="font-medium text-slate-900 text-sm">{inq.visitorName}</p>
-                                                        <p className="text-xs text-slate-500 truncate w-64">{inq.message}</p>
+                                            // Show top 5 recent inquiries matching the filter, or all if none
+                                            businessInquiries.filter(i => {
+                                                const time = new Date(i.date).getTime();
+                                                return time >= dateRange.start.getTime() && time <= dateRange.end.getTime();
+                                            }).length === 0 ? (
+                                                <div className="p-8 text-center text-slate-400 text-sm">No inquiries in selected period.</div>
+                                            ) : (
+                                                businessInquiries.filter(i => {
+                                                    const time = new Date(i.date).getTime();
+                                                    return time >= dateRange.start.getTime() && time <= dateRange.end.getTime();
+                                                }).slice(0, 5).map(inq => (
+                                                    <div key={inq.id} className="p-4 flex justify-between items-start">
+                                                        <div>
+                                                            <p className="font-medium text-slate-900 text-sm">{inq.visitorName}</p>
+                                                            <p className="text-xs text-slate-500 truncate w-64">{inq.message}</p>
+                                                        </div>
+                                                        <span className="text-xs text-slate-400">{new Date(inq.date).toLocaleDateString()}</span>
                                                     </div>
-                                                    <span className="text-xs text-slate-400">{new Date(inq.date).toLocaleDateString()}</span>
-                                                </div>
-                                            ))
+                                                ))
+                                            )
                                         )}
                                     </div>
                                 </div>
