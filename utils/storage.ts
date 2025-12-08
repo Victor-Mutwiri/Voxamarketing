@@ -1,4 +1,5 @@
 
+
 import { Business, User, WaitlistEntry, OperatingHours, WeekDay, Inquiry } from '../types';
 
 const STORAGE_KEYS = {

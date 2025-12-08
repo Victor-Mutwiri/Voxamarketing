@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -9,7 +10,9 @@ import {
   Clock, 
   Reply,
   CheckCircle,
-  Inbox
+  Inbox,
+  Building2,
+  ExternalLink
 } from 'lucide-react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import Button from '../components/Button';
@@ -130,6 +133,12 @@ const BusinessInquiries: React.FC = () => {
                                 {new Date(inq.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})}
                             </span>
                         </div>
+                         {/* B2B Indicator in List */}
+                        {inq.senderBusinessId && (
+                           <div className="flex items-center gap-1 text-[10px] text-voxa-navy dark:text-voxa-gold font-bold mb-1 uppercase">
+                              <Building2 className="w-3 h-3" /> Business Inquiry
+                           </div>
+                        )}
                         <p className={`text-xs line-clamp-2 ${!inq.isRead ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}>
                             {inq.message}
                         </p>
@@ -172,8 +181,31 @@ const BusinessInquiries: React.FC = () => {
                     <div className="p-8 overflow-y-auto flex-grow">
                         <div className="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-sm p-8 border border-slate-100 dark:border-slate-700">
                             
+                            {/* B2B Badge Header */}
+                            {selectedInquiry.senderBusinessId && (
+                                <div className="mb-6 bg-voxa-navy/5 dark:bg-white/5 border border-voxa-navy/10 dark:border-white/10 rounded-lg p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-voxa-navy text-white rounded-full">
+                                            <Building2 className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Verified Business Inquiry</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">Sent by a registered business on Voxa.</p>
+                                        </div>
+                                    </div>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      className="text-voxa-gold hover:text-voxa-goldhover"
+                                      onClick={() => navigate(`/explore?preview=${selectedInquiry.senderBusinessId}`)}
+                                    >
+                                        View Business Profile <ExternalLink className="w-3 h-3 ml-2" />
+                                    </Button>
+                                </div>
+                            )}
+
                             <div className="flex items-center gap-4 mb-8 border-b border-slate-100 dark:border-slate-700 pb-6">
-                                <div className="w-12 h-12 rounded-full bg-voxa-navy text-white flex items-center justify-center text-lg font-bold">
+                                <div className="w-12 h-12 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 flex items-center justify-center text-lg font-bold">
                                     {selectedInquiry.visitorName.charAt(0)}
                                 </div>
                                 <div>

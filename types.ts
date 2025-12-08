@@ -1,4 +1,5 @@
 
+
 export interface NavItem {
   label: string;
   path: string;
@@ -85,4 +86,5 @@ export interface Inquiry {
   message: string;
   date: string; // ISO String
   isRead: boolean;
+  senderBusinessId?: number; // Optional ID if sent by a registered business
 }

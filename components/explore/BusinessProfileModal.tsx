@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, MapPin, Star, CheckCircle, Clock, 
   Phone, Mail, Globe, Eye, Copy, Check, 
-  User, Send, Edit, AlertCircle 
+  User, Send, Edit, AlertCircle, Building2, Briefcase 
 } from 'lucide-react';
 import Button from '../Button';
 import { Business, DailyHours, User as UserType } from '../../types';
@@ -28,8 +30,25 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isMessageSent, setIsMessageSent] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [senderBusiness, setSenderBusiness] = useState<Business | undefined>(undefined);
 
   const isOwner = currentUser && currentUser.businessId === business.id;
+
+  // Initialize B2B data if applicable
+  useEffect(() => {
+    if (currentUser && currentUser.businessId && !isOwner) {
+      const myBiz = storage.getBusinessById(currentUser.businessId);
+      if (myBiz) {
+        setSenderBusiness(myBiz);
+        setLeadFormData(prev => ({
+          ...prev,
+          name: myBiz.name,
+          email: myBiz.email,
+          phone: myBiz.phone
+        }));
+      }
+    }
+  }, [currentUser, isOwner]);
 
   const handleRevealContact = (e: React.MouseEvent, type: 'phone' | 'email') => {
     e.stopPropagation(); 
@@ -54,7 +73,8 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
     // Name Validation
     if (!name.trim()) {
       newErrors.name = 'Name is required';
-    } else if (/\d/.test(name)) {
+    } else if (/\d/.test(name) && !senderBusiness) {
+      // Stricter for individuals, relaxed for business names
       newErrors.name = 'Name cannot contain numbers';
     }
 
@@ -120,10 +140,11 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
         visitorName: leadFormData.name,
         visitorEmail: leadFormData.email,
         visitorPhone: leadFormData.phone,
-        message: leadFormData.message
+        message: leadFormData.message,
+        senderBusinessId: senderBusiness?.id // Attach sender ID if B2B
     });
 
-    trackMetric('send_inquiry', business.id, 'Form Submitted');
+    trackMetric('send_inquiry', business.id, senderBusiness ? 'B2B Inquiry' : 'Form Submitted');
     setIsMessageSent(true);
   };
 
@@ -348,13 +369,28 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 <p className="text-slate-500 text-sm">Fill out the form below to contact this business directly.</p>
               </div>
 
+              {/* B2B Networking Badge */}
+              {senderBusiness && (
+                <div className="bg-voxa-navy/5 border border-voxa-navy/10 rounded-lg p-3 mb-4 flex items-center gap-3">
+                    <div className="bg-white p-2 rounded-full shadow-sm text-voxa-gold">
+                        <Briefcase className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-voxa-navy uppercase tracking-wide">B2B Networking Mode</p>
+                        <p className="text-xs text-slate-600">Sending as <span className="font-semibold">{senderBusiness.name}</span></p>
+                    </div>
+                </div>
+              )}
+
               <form onSubmit={handleLeadSubmit} className="space-y-4 flex-grow flex flex-col" noValidate>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Your Name</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    {senderBusiness ? "Business Name" : "Your Name"}
+                  </label>
                   <input 
                     type="text" 
                     className={`w-full p-3 rounded-lg border focus:ring-1 outline-none bg-white ${errors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-voxa-gold focus:border-voxa-gold'}`}
-                    placeholder="John Doe"
+                    placeholder={senderBusiness ? senderBusiness.name : "John Doe"}
                     value={leadFormData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                   />
@@ -362,7 +398,9 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    {senderBusiness ? "Business Phone" : "Phone Number"}
+                  </label>
                   <input 
                     type="tel" 
                     className={`w-full p-3 rounded-lg border focus:ring-1 outline-none bg-white ${errors.phone ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-voxa-gold focus:border-voxa-gold'}`}
@@ -374,7 +412,9 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email Address</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                     {senderBusiness ? "Business Email" : "Email Address"}
+                  </label>
                   <input 
                     type="email" 
                     className={`w-full p-3 rounded-lg border focus:ring-1 outline-none bg-white ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-voxa-gold focus:border-voxa-gold'}`}
@@ -389,7 +429,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Message</label>
                   <textarea 
                     className={`w-full p-3 rounded-lg border focus:ring-1 outline-none bg-white h-32 resize-none ${errors.message ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-voxa-gold focus:border-voxa-gold'}`}
-                    placeholder={`Hi, I'm interested in your services...`}
+                    placeholder={`Hi, we are interested in collaborating...`}
                     value={leadFormData.message}
                     onChange={(e) => handleChange('message', e.target.value)}
                   ></textarea>
