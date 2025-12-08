@@ -22,8 +22,21 @@ const DEFAULT_HOURS: OperatingHours = {
 
 // Initial Seed Data for Waitlist
 const INITIAL_WAITLIST: WaitlistEntry[] = [
-  { email: 'invite@partners.com', code: 'VOXA-2024', isUsed: false },
-  { email: 'test@company.com', code: 'TEST-CODE', isUsed: false }
+  { 
+    id: 'wl_1', 
+    email: 'invite@partners.com', 
+    entityType: 'Business', 
+    code: 'VOXA-2024', 
+    status: 'approved', 
+    createdAt: new Date().toISOString() 
+  },
+  { 
+    id: 'wl_2', 
+    email: 'pending@startup.com', 
+    entityType: 'Company', 
+    status: 'pending', 
+    createdAt: new Date(Date.now() - 86400000).toISOString() 
+  }
 ];
 
 // Initial Seed Data for Businesses
@@ -166,22 +179,67 @@ export const storage = {
     }
   },
 
+  // --- Waitlist & Admin Methods ---
+  
+  addToWaitlist: (email: string, entityType: string) => {
+    const list: WaitlistEntry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WAITLIST) || '[]');
+    // Check if already exists
+    if (list.find(e => e.email.toLowerCase() === email.toLowerCase())) {
+        return false;
+    }
+    const newEntry: WaitlistEntry = {
+        id: 'wl_' + Date.now(),
+        email,
+        entityType,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    };
+    list.push(newEntry);
+    localStorage.setItem(STORAGE_KEYS.WAITLIST, JSON.stringify(list));
+    return true;
+  },
+
+  getWaitlist: (): WaitlistEntry[] => {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.WAITLIST) || '[]');
+  },
+
+  approveWaitlistEntry: (id: string): string | null => {
+    const list: WaitlistEntry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WAITLIST) || '[]');
+    const index = list.findIndex(e => e.id === id);
+    if (index !== -1 && list[index].status === 'pending') {
+        // Generate Code: VOXA-XXXX
+        const code = 'VOXA-' + Math.floor(1000 + Math.random() * 9000).toString();
+        list[index].status = 'approved';
+        list[index].code = code;
+        localStorage.setItem(STORAGE_KEYS.WAITLIST, JSON.stringify(list));
+        return code;
+    }
+    return null;
+  },
+
+  deleteWaitlistEntry: (id: string) => {
+    let list: WaitlistEntry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WAITLIST) || '[]');
+    list = list.filter(e => e.id !== id);
+    localStorage.setItem(STORAGE_KEYS.WAITLIST, JSON.stringify(list));
+  },
+
   // Auth: Verify Waitlist Code
   verifyInvite: (email: string, code: string): boolean => {
     const list: WaitlistEntry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WAITLIST) || '[]');
-    const entry = list.find(e => e.email.toLowerCase() === email.toLowerCase() && e.code === code && !e.isUsed);
+    // Valid if status is approved and email/code matches
+    const entry = list.find(e => e.email.toLowerCase() === email.toLowerCase() && e.code === code && e.status === 'approved');
     return !!entry;
   },
 
   // Auth: Register User
   register: (email: string, password: string, code: string): User | null => {
     const list: WaitlistEntry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.WAITLIST) || '[]');
-    const entryIndex = list.findIndex(e => e.email.toLowerCase() === email.toLowerCase() && e.code === code && !e.isUsed);
+    const entryIndex = list.findIndex(e => e.email.toLowerCase() === email.toLowerCase() && e.code === code && e.status === 'approved');
 
-    if (entryIndex === -1) return null; // Invalid or used code
+    if (entryIndex === -1) return null; // Invalid or already used
 
     // Mark code as used
-    list[entryIndex].isUsed = true;
+    list[entryIndex].status = 'used';
     localStorage.setItem(STORAGE_KEYS.WAITLIST, JSON.stringify(list));
 
     // Create User

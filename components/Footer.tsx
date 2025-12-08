@@ -1,15 +1,37 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Hexagon, Instagram, Linkedin, Twitter, Mail, MapPin, Phone } from 'lucide-react';
 
 const Footer: React.FC = () => {
+  const navigate = useNavigate();
+  const [tapCount, setTapCount] = useState(0);
+
+  // Reset taps if no activity for 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTapCount(0);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [tapCount]);
+
+  const handleSecretTap = () => {
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+    if (newCount === 4) {
+      // Secret path navigation
+      navigate('/portal/8f030ac9-93da-41cc-af88-d9342cd54e5d');
+    }
+  };
+
   return (
     <footer className="bg-voxa-navy text-white pt-16 pb-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Hexagon className="w-8 h-8 text-voxa-gold fill-current" />
+            <div className="flex items-center gap-2 cursor-default select-none" onClick={handleSecretTap}>
+              <Hexagon className={`w-8 h-8 ${tapCount > 0 ? 'text-white' : 'text-voxa-gold'} fill-current transition-colors`} />
               <span className="text-2xl font-serif font-bold">Voxa.</span>
             </div>
             <p className="text-slate-300 text-sm leading-relaxed">

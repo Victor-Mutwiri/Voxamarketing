@@ -72,9 +72,12 @@ export interface User {
 }
 
 export interface WaitlistEntry {
+  id: string;
   email: string;
-  code: string;
-  isUsed: boolean;
+  entityType: string;
+  code?: string;
+  status: 'pending' | 'approved' | 'used';
+  createdAt: string;
 }
 
 export interface Inquiry {
