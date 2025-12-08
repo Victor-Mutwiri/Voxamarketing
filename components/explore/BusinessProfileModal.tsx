@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   X, MapPin, Star, CheckCircle, Clock, 
   Phone, Mail, Globe, Eye, Copy, Check, 
-  User, Send, Edit, AlertCircle, Building2, Briefcase 
+  User, Send, Edit, AlertCircle, Building2, Briefcase, Lock 
 } from 'lucide-react';
 import Button from '../Button';
 import { Business, DailyHours, User as UserType } from '../../types';
@@ -119,6 +119,11 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
   };
 
   const handleChange = (field: string, value: string) => {
+    // If it's a locked field and we have a senderBusiness, prevent changes
+    if (senderBusiness && (field === 'name' || field === 'email' || field === 'phone')) {
+      return;
+    }
+
     setLeadFormData(prev => ({ ...prev, [field]: value }));
     // Clear error for this field if it exists
     if (errors[field]) {
@@ -377,7 +382,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                     </div>
                     <div>
                         <p className="text-xs font-bold text-voxa-navy uppercase tracking-wide">B2B Networking Mode</p>
-                        <p className="text-xs text-slate-600">Sending as <span className="font-semibold">{senderBusiness.name}</span></p>
+                        <p className="text-xs text-slate-600">Sending as <span className="font-semibold">{senderBusiness.name}</span>. Identity verified.</p>
                     </div>
                 </div>
               )}
@@ -387,13 +392,20 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                     {senderBusiness ? "Business Name" : "Your Name"}
                   </label>
-                  <input 
-                    type="text" 
-                    className={`w-full p-3 rounded-lg border focus:ring-1 outline-none bg-white ${errors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-voxa-gold focus:border-voxa-gold'}`}
-                    placeholder={senderBusiness ? senderBusiness.name : "John Doe"}
-                    value={leadFormData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                  />
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      className={`w-full p-3 rounded-lg border outline-none bg-white 
+                        ${errors.name ? 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-200' : 'border-slate-200 focus:ring-1 focus:ring-voxa-gold focus:border-voxa-gold'}
+                        ${senderBusiness ? 'bg-slate-100 text-slate-500 cursor-not-allowed pr-10' : ''}
+                      `}
+                      placeholder={senderBusiness ? senderBusiness.name : "John Doe"}
+                      value={leadFormData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      readOnly={!!senderBusiness}
+                    />
+                    {senderBusiness && <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  </div>
                   {errors.name && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.name}</p>}
                 </div>
                 
@@ -401,13 +413,20 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                     {senderBusiness ? "Business Phone" : "Phone Number"}
                   </label>
-                  <input 
-                    type="tel" 
-                    className={`w-full p-3 rounded-lg border focus:ring-1 outline-none bg-white ${errors.phone ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-voxa-gold focus:border-voxa-gold'}`}
-                    placeholder="+254..."
-                    value={leadFormData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                  />
+                  <div className="relative">
+                    <input 
+                      type="tel" 
+                      className={`w-full p-3 rounded-lg border outline-none bg-white 
+                        ${errors.phone ? 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-200' : 'border-slate-200 focus:ring-1 focus:ring-voxa-gold focus:border-voxa-gold'}
+                        ${senderBusiness ? 'bg-slate-100 text-slate-500 cursor-not-allowed pr-10' : ''}
+                      `}
+                      placeholder="+254..."
+                      value={leadFormData.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      readOnly={!!senderBusiness}
+                    />
+                    {senderBusiness && <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  </div>
                   {errors.phone && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.phone}</p>}
                 </div>
 
@@ -415,13 +434,20 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                      {senderBusiness ? "Business Email" : "Email Address"}
                   </label>
-                  <input 
-                    type="email" 
-                    className={`w-full p-3 rounded-lg border focus:ring-1 outline-none bg-white ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-voxa-gold focus:border-voxa-gold'}`}
-                    placeholder="you@example.com"
-                    value={leadFormData.email}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                  />
+                  <div className="relative">
+                    <input 
+                      type="email" 
+                      className={`w-full p-3 rounded-lg border outline-none bg-white 
+                        ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-200' : 'border-slate-200 focus:ring-1 focus:ring-voxa-gold focus:border-voxa-gold'}
+                        ${senderBusiness ? 'bg-slate-100 text-slate-500 cursor-not-allowed pr-10' : ''}
+                      `}
+                      placeholder="you@example.com"
+                      value={leadFormData.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      readOnly={!!senderBusiness}
+                    />
+                     {senderBusiness && <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                  </div>
                   {errors.email && <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.email}</p>}
                 </div>
 
@@ -445,7 +471,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   <Send className="w-4 h-4" />
                 </Button>
                 <p className="text-xs text-slate-400 text-center mt-2">
-                  Your details are sent securely to the business.
+                  {senderBusiness ? "Official business inquiry." : "Your details are sent securely."}
                 </p>
               </form>
             </div>

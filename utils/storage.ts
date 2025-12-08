@@ -351,6 +351,13 @@ export const storage = {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   },
 
+  getInquiriesSentByBusiness: (senderBusinessId: number): Inquiry[] => {
+    const inquiries: Inquiry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || '[]');
+    return inquiries
+      .filter(i => i.senderBusinessId === senderBusinessId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
   markInquiryAsRead: (inquiryId: string) => {
     const inquiries: Inquiry[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.INQUIRIES) || '[]');
     const index = inquiries.findIndex(i => i.id === inquiryId);
