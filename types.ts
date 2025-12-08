@@ -53,6 +53,7 @@ export interface Business {
   website: string;
   isVerified: boolean;
   isVisible: boolean;
+  accountStatus?: 'active' | 'suspended' | 'banned';
   specialties: string[];
   operatingHours?: OperatingHours;
   entityType?: EntityType;

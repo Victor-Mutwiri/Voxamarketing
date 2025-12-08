@@ -1,5 +1,6 @@
 
 
+
 import { Business, User, WaitlistEntry, OperatingHours, WeekDay, Inquiry } from '../types';
 
 const STORAGE_KEYS = {
@@ -56,6 +57,7 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.nairobilegal.co.ke",
     isVerified: true,
     isVisible: true,
+    accountStatus: 'active',
     specialties: ["Mergers & Acquisitions", "Dispute Resolution", "Intellectual Property"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Company'
@@ -75,6 +77,7 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.apexengineering.com",
     isVerified: true,
     isVisible: true,
+    accountStatus: 'active',
     specialties: ["Structural Audit", "Road Construction", "Water Systems"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Company'
@@ -94,6 +97,7 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.medicare.co.ke",
     isVerified: true,
     isVisible: true,
+    accountStatus: 'active',
     specialties: ["Cardiac Care", "Advanced Imaging", "Executive Checkups"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Organization'
@@ -113,6 +117,7 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.buildright.com",
     isVerified: true,
     isVisible: true,
+    accountStatus: 'active',
     specialties: ["Eco-friendly Design", "High-rise Developments", "Interior Architecture"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Business'
@@ -132,6 +137,7 @@ const INITIAL_BUSINESSES: Business[] = [
     website: "www.drjameskamau.com",
     isVerified: true,
     isVisible: true,
+    accountStatus: 'active',
     specialties: ["Pediatrics", "Child Neurology"],
     operatingHours: DEFAULT_HOURS,
     entityType: 'Consultant'
@@ -337,6 +343,7 @@ export const storage = {
       reviews: 0,
       isVerified: false,
       isVisible: true,
+      accountStatus: 'active',
       operatingHours: DEFAULT_HOURS,
       tags: [],
       ...data
@@ -370,6 +377,24 @@ export const storage = {
           businesses[index].tags = data.specialties.slice(0, 3);
       }
       
+      localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(businesses));
+      return businesses[index];
+    }
+    return null;
+  },
+
+  // Admin: Update Business Status
+  updateBusinessStatus: (businessId: number, status: 'active' | 'suspended' | 'banned') => {
+    const businesses: Business[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BUSINESSES) || '[]');
+    const index = businesses.findIndex(b => b.id === businessId);
+    if (index !== -1) {
+      businesses[index].accountStatus = status;
+      // If suspended or banned, hide visibility automatically
+      if (status !== 'active') {
+        businesses[index].isVisible = false;
+      } else {
+        businesses[index].isVisible = true;
+      }
       localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(businesses));
       return businesses[index];
     }
