@@ -6,6 +6,8 @@ import { storage } from '../../utils/storage';
 
 const WaitlistSection: React.FC = () => {
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [entityType, setEntityType] = useState<string>('Business');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -14,10 +16,12 @@ const WaitlistSection: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const success = await storage.addToWaitlist(email, entityType);
+      const success = await storage.addToWaitlist(email, entityType, phone, businessName);
       if (success) {
         setSubmitted(true);
         setEmail('');
+        setPhone('');
+        setBusinessName('');
       } else {
         alert("This email is already on the waitlist.");
       }
@@ -60,26 +64,46 @@ const WaitlistSection: React.FC = () => {
             </div>
           ) : (
             <>
-              <form onSubmit={handleWaitlistSubmit} className="bg-white/10 backdrop-blur-sm p-2 rounded-xl border border-white/10 flex flex-col md:flex-row gap-2">
-                <select 
-                  className="h-12 px-4 rounded-lg bg-slate-800 border-none text-white focus:ring-2 focus:ring-voxa-gold outline-none md:w-56 cursor-pointer"
-                  value={entityType}
-                  onChange={(e) => setEntityType(e.target.value)}
-                >
-                  <option value="Business">I am a Business</option>
-                  <option value="Company">I am a Company</option>
-                  <option value="Organization">I am an Organization</option>
-                  <option value="Consultant">I am a Consultant</option>
-                </select>
-                <input 
-                  type="email" 
-                  placeholder="Enter your email address" 
-                  className="h-12 flex-grow px-6 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-voxa-gold"
-                  required 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <Button type="submit" variant="primary" size="lg" className="md:w-auto w-full" disabled={loading}>
+              <form onSubmit={handleWaitlistSubmit} className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/10 flex flex-col gap-4 max-w-xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input 
+                    type="text" 
+                    placeholder="Business Name" 
+                    className="h-12 px-4 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-voxa-gold"
+                    required 
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                  />
+                  <select 
+                    className="h-12 px-4 rounded-lg bg-slate-800 border-none text-white focus:ring-2 focus:ring-voxa-gold outline-none cursor-pointer"
+                    value={entityType}
+                    onChange={(e) => setEntityType(e.target.value)}
+                  >
+                    <option value="Business">I am a Business</option>
+                    <option value="Company">I am a Company</option>
+                    <option value="Organization">I am an Organization</option>
+                    <option value="Consultant">I am a Consultant</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input 
+                    type="email" 
+                    placeholder="Email Address" 
+                    className="h-12 px-4 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-voxa-gold"
+                    required 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <input 
+                    type="tel" 
+                    placeholder="Phone Number" 
+                    className="h-12 px-4 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-voxa-gold"
+                    required 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" variant="primary" size="lg" className="w-full" disabled={loading}>
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (

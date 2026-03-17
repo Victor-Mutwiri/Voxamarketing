@@ -93,6 +93,8 @@ export interface WaitlistEntry {
   id: string;
   email: string;
   entityType: string;
+  phone?: string;
+  businessName?: string;
   code?: string;
   status: 'pending' | 'approved' | 'used';
   createdAt: string;

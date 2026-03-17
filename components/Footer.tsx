@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
   const handleSecretTap = () => {
     const newCount = tapCount + 1;
     setTapCount(newCount);
-    if (newCount === 4) {
+    if (newCount === 5) {
       // Secret path navigation
       navigate('/portal/8f030ac9-93da-41cc-af88-d9342cd54e5d');
     }
@@ -30,8 +30,8 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 cursor-default select-none" onClick={handleSecretTap}>
-              <Hexagon className={`w-8 h-8 ${tapCount > 0 ? 'text-white' : 'text-voxa-gold'} fill-current transition-colors`} />
+            <div className="flex items-center gap-2 cursor-default select-none">
+              <Hexagon className="w-8 h-8 text-voxa-gold fill-current" />
               <span className="text-2xl font-serif font-bold">Voxa.</span>
             </div>
             <p className="text-slate-300 text-sm leading-relaxed">
@@ -62,9 +62,9 @@ const Footer: React.FC = () => {
                 <Mail className="w-4 h-4 text-voxa-gold" />
                 <span>concierge@voxamarketing.com</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-voxa-gold" />
-                <span>+254 700 000 000</span>
+              <li className="flex items-center gap-3 cursor-pointer select-none group" onClick={handleSecretTap}>
+                <Phone className={`w-4 h-4 transition-colors ${tapCount > 0 ? 'text-white' : 'text-voxa-gold'}`} />
+                <span className="group-hover:text-white transition-colors">+254 700 000 000</span>
               </li>
             </ul>
           </div>

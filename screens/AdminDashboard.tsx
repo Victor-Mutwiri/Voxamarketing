@@ -81,7 +81,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const [waitlistData, businessesData] = await Promise.all([
         storage.getWaitlist(),
-        storage.getBusinesses()
+        storage.getAllBusinesses()
       ]);
       setWaitlist(waitlistData);
       setBusinesses(businessesData);
@@ -389,7 +389,8 @@ const AdminDashboard: React.FC = () => {
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold text-slate-700">Date</th>
-                                        <th className="px-6 py-4 font-semibold text-slate-700">Email</th>
+                                        <th className="px-6 py-4 font-semibold text-slate-700">Business / Email</th>
+                                        <th className="px-6 py-4 font-semibold text-slate-700">Phone</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700">Type</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700">Code</th>
@@ -398,12 +399,16 @@ const AdminDashboard: React.FC = () => {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {waitlist.length === 0 ? (
-                                        <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400">No requests found.</td></tr>
+                                        <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-400">No requests found.</td></tr>
                                     ) : (
                                         waitlist.slice().reverse().map((entry) => (
                                             <tr key={entry.id} className="hover:bg-slate-50 transition-colors">
                                                 <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(entry.createdAt).toLocaleDateString()}</td>
-                                                <td className="px-6 py-4 font-medium text-slate-900">{entry.email}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-slate-900">{entry.businessName || 'N/A'}</div>
+                                                    <div className="text-xs text-slate-500">{entry.email}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-600">{entry.phone || '--'}</td>
                                                 <td className="px-6 py-4 text-slate-600"><span className="bg-slate-100 px-2 py-1 rounded text-xs">{entry.entityType}</span></td>
                                                 <td className="px-6 py-4">
                                                     {entry.status === 'pending' && <span className="text-orange-600 bg-orange-50 px-2 py-1 rounded-full text-xs font-bold">Pending</span>}
@@ -466,6 +471,7 @@ const AdminDashboard: React.FC = () => {
                                         <th className="px-6 py-4 font-semibold text-slate-700 text-center">Views</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700 text-center">Reveals</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700 text-center">Clicks</th>
+                                        <th className="px-6 py-4 font-semibold text-slate-700 text-center">Inquiries</th>
                                         <th className="px-6 py-4 font-semibold text-slate-700 text-right">Action</th>
                                     </tr>
                                 </thead>
@@ -500,6 +506,7 @@ const AdminDashboard: React.FC = () => {
                                             <td className="px-6 py-4 text-center text-slate-600">{biz.metrics?.views || 0}</td>
                                             <td className="px-6 py-4 text-center text-slate-600">{biz.metrics?.contactReveals || 0}</td>
                                             <td className="px-6 py-4 text-center text-slate-600">{biz.metrics?.websiteClicks || 0}</td>
+                                            <td className="px-6 py-4 text-center text-slate-600">{(biz as any).inquiryCount || 0}</td>
                                             
                                             <td className="px-6 py-4 text-right">
                                                 <Button size="sm" variant="ghost" className="text-slate-500 hover:text-slate-900">Manage</Button>

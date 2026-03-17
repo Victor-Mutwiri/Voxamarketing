@@ -14,10 +14,17 @@ export const storage = {
 
   // --- Waitlist & Admin Methods ---
   
-  addToWaitlist: async (email: string, entityType: string) => {
+  addToWaitlist: async (email: string, entityType: string, phone: string, businessName: string) => {
     const { error } = await supabase
       .from('invitations')
-      .insert([{ email, entity_type: entityType, status: 'pending', code: 'PENDING-' + Math.random().toString(36).substring(7).toUpperCase() }]);
+      .insert([{ 
+        email, 
+        entity_type: entityType, 
+        phone,
+        business_name: businessName,
+        status: 'pending', 
+        code: 'PENDING-' + Math.random().toString(36).substring(7).toUpperCase() 
+      }]);
     
     return !error;
   },
@@ -33,6 +40,8 @@ export const storage = {
       id: item.id,
       email: item.email,
       entityType: item.entity_type,
+      phone: item.phone,
+      businessName: item.business_name,
       code: item.code,
       status: item.status,
       createdAt: item.created_at
@@ -249,6 +258,61 @@ export const storage = {
       .single();
     
     return error ? null : updated;
+  },
+
+  // Admin: Get All Businesses (including hidden/suspended)
+  getAllBusinesses: async (): Promise<Business[]> => {
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*')
+      .order('joined_at', { ascending: false });
+    
+    if (error) return [];
+    
+    // Fetch metrics and inquiry counts for each business
+    const businessesWithStats = await Promise.all(data.map(async (b) => {
+      const { count: inquiryCount } = await supabase
+        .from('inquiries')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', b.id);
+      
+      // Fetch specific metric counts
+      const [views, reveals, clicks] = await Promise.all([
+        supabase.from('analytics_events').select('*', { count: 'exact', head: true }).eq('business_id', b.id).eq('type', 'view'),
+        supabase.from('analytics_events').select('*', { count: 'exact', head: true }).eq('business_id', b.id).eq('type', 'contact_reveal'),
+        supabase.from('analytics_events').select('*', { count: 'exact', head: true }).eq('business_id', b.id).eq('type', 'website_click')
+      ]);
+
+      return {
+        id: b.id,
+        name: b.name,
+        industry: b.industry,
+        location: b.location,
+        rating: b.rating,
+        reviews: b.reviews,
+        tags: b.tags,
+        image: b.image,
+        fullDescription: b.full_description,
+        phone: b.phone,
+        email: b.email,
+        website: b.website,
+        isVerified: b.is_verified,
+        isVisible: b.is_visible,
+        joinedAt: b.joined_at,
+        accountStatus: b.account_status,
+        specialties: b.specialties,
+        operatingHours: b.operating_hours,
+        entityType: b.entity_type,
+        metrics: {
+          views: views.count || 0,
+          contactReveals: reveals.count || 0,
+          websiteClicks: clicks.count || 0
+        },
+        inquiryCount: inquiryCount || 0
+      } as Business & { inquiryCount: number };
+    }));
+
+    return businessesWithStats;
   },
 
   // Admin: Update Business Status
