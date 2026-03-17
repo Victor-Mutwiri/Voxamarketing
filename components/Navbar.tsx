@@ -8,7 +8,7 @@ import { storage } from '../utils/storage';
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,7 +23,11 @@ const Navbar: React.FC = () => {
 
   // Check auth state on mount and route change
   useEffect(() => {
-    setCurrentUser(storage.getCurrentUser());
+    const checkUser = async () => {
+      const user = await storage.getCurrentUser();
+      setCurrentUser(user);
+    };
+    checkUser();
     setIsOpen(false); // Close mobile menu on route change
   }, [location]);
 

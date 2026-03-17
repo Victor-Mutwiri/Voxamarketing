@@ -34,29 +34,37 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
   const [isMessageSent, setIsMessageSent] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [senderBusiness, setSenderBusiness] = useState<Business | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
 
   const isOwner = currentUser && currentUser.businessId === business.id;
 
   // Initialize B2B data if applicable
   useEffect(() => {
-    if (currentUser && currentUser.businessId && !isOwner) {
-      const myBiz = storage.getBusinessById(currentUser.businessId);
-      if (myBiz) {
-        setSenderBusiness(myBiz);
-        setLeadFormData(prev => ({
-          ...prev,
-          name: myBiz.name,
-          email: myBiz.email,
-          phone: myBiz.phone
-        }));
+    const loadSenderBusiness = async () => {
+      if (currentUser && currentUser.businessId && !isOwner) {
+        try {
+          const myBiz = await storage.getBusinessById(currentUser.businessId);
+          if (myBiz) {
+            setSenderBusiness(myBiz);
+            setLeadFormData(prev => ({
+              ...prev,
+              name: myBiz.name,
+              email: myBiz.email,
+              phone: myBiz.phone
+            }));
+          }
+        } catch (error) {
+          console.error('Error loading sender business:', error);
+        }
       }
-    }
+    };
+    loadSenderBusiness();
   }, [currentUser, isOwner]);
 
   const handleRevealContact = (e: React.MouseEvent, type: 'phone' | 'email') => {
     e.stopPropagation(); 
-    if (!revealedContacts.includes(business.id)) {
-        setRevealedContacts([...revealedContacts, business.id]);
+    if (!revealedContacts.includes(business.id as any)) {
+        setRevealedContacts([...revealedContacts, business.id as any]);
     }
     trackMetric(`reveal_${type}`, business.id);
   };
@@ -142,22 +150,29 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
     }
   };
 
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
-    storage.saveInquiry({
-        businessId: business.id,
-        visitorName: leadFormData.name,
-        visitorEmail: leadFormData.email,
-        visitorPhone: leadFormData.phone,
-        message: leadFormData.message,
-        senderBusinessId: senderBusiness?.id // Attach sender ID if B2B
-    });
+    setLoading(true);
+    try {
+      await storage.saveInquiry({
+          businessId: business.id,
+          visitorName: leadFormData.name,
+          visitorEmail: leadFormData.email,
+          visitorPhone: leadFormData.phone,
+          message: leadFormData.message,
+          senderBusinessId: senderBusiness?.id // Attach sender ID if B2B
+      });
 
-    trackMetric('send_inquiry', business.id, senderBusiness ? 'B2B Inquiry' : 'Form Submitted');
-    setIsMessageSent(true);
+      trackMetric('send_inquiry', business.id, senderBusiness ? 'B2B Inquiry' : 'Form Submitted');
+      setIsMessageSent(true);
+    } catch (error: any) {
+      alert(error.message || 'Failed to send inquiry.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatWebsiteUrl = (url: string) => {
@@ -487,9 +502,13 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   )}
                 </div>
 
-                <Button className="w-full gap-2 mt-auto" type="submit">
-                  Send Message
-                  <Send className="w-4 h-4" />
+                <Button className="w-full gap-2 mt-auto" type="submit" disabled={loading}>
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {loading ? 'Sending...' : 'Send Message'}
                 </Button>
                 <p className="text-xs text-slate-400 text-center mt-2">
                   {senderBusiness ? "Official business inquiry." : "Your details are sent securely."}

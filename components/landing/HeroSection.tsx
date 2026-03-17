@@ -45,7 +45,7 @@ const HeroSection: React.FC = () => {
     setHasSearched(false); 
 
     try {
-      const businesses = storage.getBusinesses();
+      const businesses = await storage.getBusinesses();
       const results = await AI.search(searchQuery, businesses);
       setSearchResults(results);
       setHasSearched(true);

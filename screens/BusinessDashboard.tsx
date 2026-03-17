@@ -32,29 +32,42 @@ const BusinessDashboard: React.FC = () => {
     end: new Date()
   });
 
+  const [loading, setLoading] = useState<boolean>(true);
+
   useEffect(() => {
-    const user = storage.getCurrentUser();
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    setCurrentUser(user);
-    if (user.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const user = await storage.getCurrentUser();
+        if (!user) {
+          navigate('/auth');
+          return;
+        }
+        setCurrentUser(user);
+        if (user.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
 
-    if (user.businessId) {
-      const biz = storage.getBusinessById(user.businessId);
-      setBusinessData(biz);
-      
-      const inqs = storage.getInquiriesByBusiness(user.businessId);
-      setAllInquiries(inqs);
-
-      const events = storage.getAnalyticsEvents(user.businessId);
-      setAllAnalytics(events);
-    }
+        if (user.businessId) {
+          const [biz, inqs, events] = await Promise.all([
+            storage.getBusinessById(user.businessId),
+            storage.getInquiriesByBusiness(user.businessId),
+            storage.getAnalyticsEvents(user.businessId)
+          ]);
+          
+          setBusinessData(biz);
+          setAllInquiries(inqs);
+          setAllAnalytics(events);
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, [navigate]);
 
   // Handle Filter Change
@@ -99,6 +112,14 @@ const BusinessDashboard: React.FC = () => {
     { label: 'Inquiries', value: filteredStats.inquiries.length.toString(), change: '', icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-50' },
     { label: 'Website Clicks', value: filteredStats.clicks.toLocaleString(), change: '', icon: MousePointerClick, color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-voxa-gold border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-colors duration-300">

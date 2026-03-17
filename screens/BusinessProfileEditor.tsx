@@ -30,21 +30,30 @@ const BusinessProfileEditor: React.FC = () => {
 
   // Fetch Data on Mount
   useEffect(() => {
-    const user = storage.getCurrentUser();
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    setCurrentUser(user);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const user = await storage.getCurrentUser();
+        if (!user) {
+          navigate('/auth');
+          return;
+        }
+        setCurrentUser(user);
 
-    if (user.businessId) {
-      const biz = storage.getBusinessById(user.businessId);
-      if (biz) {
-        setFormData(biz);
-        setOriginalData(biz);
+        if (user.businessId) {
+          const biz = await storage.getBusinessById(user.businessId);
+          if (biz) {
+            setFormData(biz);
+            setOriginalData(biz);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile data:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+    loadData();
   }, [navigate]);
 
   const handleChange = (field: keyof Business, value: any) => {
@@ -69,7 +78,7 @@ const BusinessProfileEditor: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentUser?.businessId) return;
 
     if (!formData.name || !formData.location || !formData.phone || !formData.email) {
@@ -77,12 +86,19 @@ const BusinessProfileEditor: React.FC = () => {
       return;
     }
 
-    storage.updateBusinessProfile(currentUser.businessId, formData);
-    setOriginalData(formData);
-    setSuccessMessage('Profile updated successfully!');
-    
-    // Auto-hide toast
-    setTimeout(() => setSuccessMessage(''), 3000);
+    setIsLoading(true);
+    try {
+      await storage.updateBusinessProfile(currentUser.businessId, formData);
+      setOriginalData(formData);
+      setSuccessMessage('Profile updated successfully!');
+      
+      // Auto-hide toast
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error: any) {
+      alert(error.message || 'Failed to update profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isLoading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
@@ -101,9 +117,14 @@ const BusinessProfileEditor: React.FC = () => {
               <p className="text-slate-500">Update your business information and public appearance.</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => navigate('/business/dashboard')}>Cancel</Button>
-              <Button className="gap-2" onClick={handleSave}>
-                <Save className="w-4 h-4" /> Save Changes
+              <Button variant="outline" onClick={() => navigate('/business/dashboard')} disabled={isLoading}>Cancel</Button>
+              <Button className="gap-2" onClick={handleSave} disabled={isLoading}>
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {isLoading ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>

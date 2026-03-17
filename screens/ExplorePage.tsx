@@ -26,32 +26,43 @@ const ExplorePage: React.FC = () => {
   const [aiQuery, setAiQuery] = useState<string | null>(null);
 
   // Auth State
-  const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check if we came from Landing Page with AI results
-    if (location.state && location.state.aiResults) {
-        setAiResults(location.state.aiResults);
-        setAiQuery(location.state.query);
-    }
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const user = await storage.getCurrentUser();
+        setCurrentUser(user);
 
-    // Fetch default businesses
-    const data = storage.getBusinesses();
-    setBusinesses(data);
+        // Fetch default businesses
+        const data = await storage.getBusinesses();
+        setBusinesses(data);
 
-    // Refresh user state
-    setCurrentUser(storage.getCurrentUser());
+        // Check if we came from Landing Page with AI results
+        if (location.state && location.state.aiResults) {
+          setAiResults(location.state.aiResults);
+          setAiQuery(location.state.query);
+        }
 
-    // Handle "Preview Mode" from query param
-    const previewId = searchParams.get('preview');
-    if (previewId) {
-      const biz = data.find(b => b.id.toString() === previewId);
-      if (biz) {
-        setSelectedBusiness(biz);
-        // Track initial view from preview
-        trackMetric('profile_view', biz.id);
+        // Handle "Preview Mode" from query param
+        const previewId = searchParams.get('preview');
+        if (previewId) {
+          const biz = data.find(b => b.id.toString() === previewId);
+          if (biz) {
+            setSelectedBusiness(biz);
+            // Track initial view from preview
+            trackMetric('profile_view', biz.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading explore data:', error);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+    loadData();
   }, [searchParams, location.state]);
 
   const clearAiSearch = () => {
@@ -80,16 +91,20 @@ const ExplorePage: React.FC = () => {
   });
 
   // Analytics Simulation Function
-  const trackMetric = (action: string, businessId: number, details?: string) => {
+  const trackMetric = async (action: string, businessId: string, details?: string) => {
     console.log(`[ANALYTICS] Action: ${action} | BusinessID: ${businessId} | Details: ${details || 'N/A'}`);
     
     // Update Storage for persistence
-    if (action === 'profile_view') {
-        storage.incrementBusinessMetric(businessId, 'views');
-    } else if (action === 'website_click') {
-        storage.incrementBusinessMetric(businessId, 'websiteClicks');
-    } else if (action.startsWith('reveal_') || action.startsWith('copy_')) {
-        storage.incrementBusinessMetric(businessId, 'contactReveals');
+    try {
+      if (action === 'profile_view') {
+          await storage.incrementBusinessMetric(businessId, 'views');
+      } else if (action === 'website_click') {
+          await storage.incrementBusinessMetric(businessId, 'websiteClicks');
+      } else if (action.startsWith('reveal_') || action.startsWith('copy_')) {
+          await storage.incrementBusinessMetric(businessId, 'contactReveals');
+      }
+    } catch (error) {
+      console.error('Error tracking metric:', error);
     }
   };
 
@@ -112,57 +127,64 @@ const ExplorePage: React.FC = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-        <div className="flex flex-col lg:flex-row gap-8">
-          
-          {/* Filters Sidebar */}
-          <div className="hidden lg:block w-64 flex-shrink-0 space-y-6">
-            <FilterSidebar 
-              industries={INDUSTRIES}
-              selectedIndustry={selectedIndustry}
-              setSelectedIndustry={setSelectedIndustry}
-              disabled={!!aiResults}
-            />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-12 h-12 border-4 border-voxa-gold border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-500 font-medium">Loading premium businesses...</p>
           </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-8">
+            
+            {/* Filters Sidebar */}
+            <div className="hidden lg:block w-64 flex-shrink-0 space-y-6">
+              <FilterSidebar 
+                industries={INDUSTRIES}
+                selectedIndustry={selectedIndustry}
+                setSelectedIndustry={setSelectedIndustry}
+                disabled={!!aiResults}
+              />
+            </div>
 
-          {/* Results Grid */}
-          <div className="flex-grow">
-            <div className="mb-4 text-slate-500 text-sm flex justify-between items-center">
-              <span>Showing {filteredBusinesses.length} premium results</span>
-              {aiResults && (
-                  <Button variant="ghost" size="sm" onClick={clearAiSearch} className="text-red-500 hover:bg-red-50 h-8">
-                      Clear AI Results
-                  </Button>
+            {/* Results Grid */}
+            <div className="flex-grow">
+              <div className="mb-4 text-slate-500 text-sm flex justify-between items-center">
+                <span>Showing {filteredBusinesses.length} premium results</span>
+                {aiResults && (
+                    <Button variant="ghost" size="sm" onClick={clearAiSearch} className="text-red-500 hover:bg-red-50 h-8">
+                        Clear AI Results
+                    </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredBusinesses.map((biz) => (
+                  <BusinessCard 
+                    key={biz.id}
+                    business={biz}
+                    isAiResult={!!aiResults}
+                    onClick={handleOpenProfile}
+                  />
+                ))}
+              </div>
+
+              {filteredBusinesses.length === 0 && (
+                <div className="text-center py-20 bg-white rounded-xl border border-slate-100">
+                  <p className="text-slate-500 text-lg">No businesses found matching your criteria.</p>
+                  <button 
+                    className="mt-4 text-voxa-gold font-medium hover:underline"
+                    onClick={() => {
+                        setSearchTerm(''); 
+                        setSelectedIndustry('All');
+                        clearAiSearch();
+                    }}
+                  >
+                    Clear all filters
+                  </button>
+                </div>
               )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredBusinesses.map((biz) => (
-                <BusinessCard 
-                  key={biz.id}
-                  business={biz}
-                  isAiResult={!!aiResults}
-                  onClick={handleOpenProfile}
-                />
-              ))}
-            </div>
-
-            {filteredBusinesses.length === 0 && (
-              <div className="text-center py-20 bg-white rounded-xl border border-slate-100">
-                <p className="text-slate-500 text-lg">No businesses found matching your criteria.</p>
-                <button 
-                  className="mt-4 text-voxa-gold font-medium hover:underline"
-                  onClick={() => {
-                      setSearchTerm(''); 
-                      setSelectedIndustry('All');
-                      clearAiSearch();
-                  }}
-                >
-                  Clear all filters
-                </button>
-              </div>
-            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Business Profile Modal */}

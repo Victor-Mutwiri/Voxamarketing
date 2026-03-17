@@ -48,13 +48,13 @@ export type MetricType = 'view' | 'contact_reveal' | 'website_click';
 
 export interface AnalyticsEvent {
   id: string;
-  businessId: number;
+  businessId: string;
   type: MetricType;
   timestamp: string; // ISO String
 }
 
 export interface Business {
-  id: number;
+  id: string;
   name: string;
   industry: string;
   location: string;
@@ -83,7 +83,7 @@ export interface User {
   id: string;
   email: string;
   password?: string; // In real app, this would be hashed
-  businessId?: number;
+  businessId?: string;
   isProfileComplete: boolean;
   role: 'business' | 'admin';
   theme?: 'light' | 'dark';
@@ -100,12 +100,12 @@ export interface WaitlistEntry {
 
 export interface Inquiry {
   id: string;
-  businessId: number;
+  businessId: string;
   visitorName: string;
   visitorEmail: string;
   visitorPhone: string;
   message: string;
   date: string; // ISO String
   isRead: boolean;
-  senderBusinessId?: number; // Optional ID if sent by a registered business
+  senderBusinessId?: string; // Optional ID if sent by a registered business
 }

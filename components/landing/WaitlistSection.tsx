@@ -8,15 +8,23 @@ const WaitlistSection: React.FC = () => {
   const [email, setEmail] = useState('');
   const [entityType, setEntityType] = useState<string>('Business');
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleWaitlistSubmit = (e: React.FormEvent) => {
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = storage.addToWaitlist(email, entityType);
-    if (success) {
-      setSubmitted(true);
-      setEmail('');
-    } else {
-      alert("This email is already on the waitlist.");
+    setLoading(true);
+    try {
+      const success = await storage.addToWaitlist(email, entityType);
+      if (success) {
+        setSubmitted(true);
+        setEmail('');
+      } else {
+        alert("This email is already on the waitlist.");
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to join waitlist.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,8 +79,12 @@ const WaitlistSection: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-                <Button type="submit" variant="primary" size="lg" className="md:w-auto w-full">
-                  Join Waitlist
+                <Button type="submit" variant="primary" size="lg" className="md:w-auto w-full" disabled={loading}>
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Join Waitlist'
+                  )}
                 </Button>
               </form>
               <p className="mt-4 text-sm text-slate-400">

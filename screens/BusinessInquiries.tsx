@@ -37,49 +37,63 @@ const BusinessInquiries: React.FC = () => {
   // Cache names for Sent View (To: [BusinessName])
   const [businessNames, setBusinessNames] = useState<Record<number, string>>({});
 
+  const [loading, setLoading] = useState<boolean>(true);
+
   useEffect(() => {
-    const user = storage.getCurrentUser();
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    // Set theme
-    if (user.theme === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const user = await storage.getCurrentUser();
+        if (!user) {
+          navigate('/auth');
+          return;
+        }
+        // Set theme
+        if (user.theme === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
 
-    if (user.businessId) {
-      // 1. Fetch Inbox
-      const inbox = storage.getInquiriesByBusiness(user.businessId);
-      setInboxInquiries(inbox);
-
-      // 2. Fetch Sent
-      const sent = storage.getInquiriesSentByBusiness(user.businessId);
-      setSentInquiries(sent);
-      
-      // 3. Resolve Business Names for Sent items
-      // We need to know who we sent messages to.
-      // The `businessId` in the inquiry object is the RECIPIENT.
-      const recipientIds = Array.from(new Set(sent.map(i => i.businessId)));
-      const nameMap: Record<number, string> = {};
-      
-      // We can iterate recipientIds and get names. 
-      // Optimization: Get all businesses once or get individually. Since mock data is sync:
-      recipientIds.forEach(id => {
-          const biz = storage.getBusinessById(id);
-          if (biz) nameMap[id] = biz.name;
-      });
-      setBusinessNames(nameMap);
-    }
+        if (user.businessId) {
+          // 1. Fetch Inbox & Sent
+          const [inbox, sent] = await Promise.all([
+            storage.getInquiriesByBusiness(user.businessId),
+            storage.getInquiriesSentByBusiness(user.businessId)
+          ]);
+          
+          setInboxInquiries(inbox);
+          setSentInquiries(sent);
+          
+          // 2. Resolve Business Names for Sent items
+          const recipientIds = Array.from(new Set(sent.map(i => i.businessId)));
+          const nameMap: Record<string, string> = {};
+          
+          await Promise.all(recipientIds.map(async (id) => {
+            const biz = await storage.getBusinessById(id);
+            if (biz) nameMap[id] = biz.name;
+          }));
+          
+          setBusinessNames(nameMap);
+        }
+      } catch (error) {
+        console.error('Error loading inquiries:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, [navigate]);
 
-  const handleSelectInquiry = (inquiry: Inquiry) => {
+  const handleSelectInquiry = async (inquiry: Inquiry) => {
     setSelectedInquiry(inquiry);
     
     // Only mark as read if it is an INBOX item
     if (activeTab === 'inbox' && !inquiry.isRead) {
-      storage.markInquiryAsRead(inquiry.id);
-      // Update local state
-      setInboxInquiries(prev => prev.map(i => i.id === inquiry.id ? { ...i, isRead: true } : i));
+      try {
+        await storage.markInquiryAsRead(inquiry.id);
+        // Update local state
+        setInboxInquiries(prev => prev.map(i => i.id === inquiry.id ? { ...i, isRead: true } : i));
+      } catch (error) {
+        console.error('Error marking inquiry as read:', error);
+      }
     }
   };
 
@@ -101,6 +115,14 @@ const BusinessInquiries: React.FC = () => {
                           inq.message.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-voxa-gold border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-colors duration-300">

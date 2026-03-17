@@ -31,50 +31,68 @@ const BusinessSettings: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const user = storage.getCurrentUser();
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    setCurrentUser(user);
-    setTheme(user.theme || 'light');
-    
-    // Apply theme on load
-    if (user.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const user = await storage.getCurrentUser();
+        if (!user) {
+          navigate('/auth');
+          return;
+        }
+        setCurrentUser(user);
+        setTheme(user.theme || 'light');
+        
+        // Apply theme on load
+        if (user.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
 
-    if (user.businessId) {
-      const biz = storage.getBusinessById(user.businessId);
-      if (biz) {
-        setBusiness(biz);
-        setIsVisible(biz.isVisible);
-        // Initialize hours if missing
-        setHours(biz.operatingHours || {
-          Monday: { isOpen: true, open: '08:00', close: '17:00' },
-          Tuesday: { isOpen: true, open: '08:00', close: '17:00' },
-          Wednesday: { isOpen: true, open: '08:00', close: '17:00' },
-          Thursday: { isOpen: true, open: '08:00', close: '17:00' },
-          Friday: { isOpen: true, open: '08:00', close: '17:00' },
-          Saturday: { isOpen: false, open: '09:00', close: '13:00' },
-          Sunday: { isOpen: false, open: '09:00', close: '13:00' },
-        });
+        if (user.businessId) {
+          const biz = await storage.getBusinessById(user.businessId);
+          if (biz) {
+            setBusiness(biz);
+            setIsVisible(biz.isVisible);
+            // Initialize hours if missing
+            setHours(biz.operatingHours || {
+              Monday: { isOpen: true, open: '08:00', close: '17:00' },
+              Tuesday: { isOpen: true, open: '08:00', close: '17:00' },
+              Wednesday: { isOpen: true, open: '08:00', close: '17:00' },
+              Thursday: { isOpen: true, open: '08:00', close: '17:00' },
+              Friday: { isOpen: true, open: '08:00', close: '17:00' },
+              Saturday: { isOpen: false, open: '09:00', close: '13:00' },
+              Sunday: { isOpen: false, open: '09:00', close: '13:00' },
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+    loadData();
   }, [navigate]);
 
-  const handleThemeToggle = () => {
+  const handleThemeToggle = async () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     if (currentUser) {
-      storage.updateUserTheme(currentUser.id, newTheme);
+      try {
+        await storage.updateUserTheme(currentUser.id, newTheme);
+        if (newTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (error) {
+        console.error('Error updating theme:', error);
+      }
     }
   };
 
-  const handleHourChange = (day: WeekDay, field: keyof typeof hours[WeekDay], value: any) => {
+  const handleHourChange = (day: WeekDay, field: keyof OperatingHours[WeekDay], value: any) => {
     if (!hours) return;
     setHours({
       ...hours,
@@ -85,24 +103,37 @@ const BusinessSettings: React.FC = () => {
     });
   };
 
-  const saveSettings = () => {
+  const saveSettings = async () => {
     if (currentUser?.businessId && business) {
-      storage.updateBusinessProfile(currentUser.businessId, {
-        isVisible: isVisible,
-        operatingHours: hours
-      });
-      setSuccessMessage('Settings saved successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setIsLoading(true);
+      try {
+        await storage.updateBusinessProfile(currentUser.businessId, {
+          isVisible: isVisible,
+          operatingHours: hours
+        });
+        setSuccessMessage('Settings saved successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (error: any) {
+        alert(error.message || 'Failed to save settings.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     const confirmName = prompt(`To confirm deletion, please type "${business?.name}" below:`);
     if (confirmName === business?.name) {
       if (currentUser) {
-        storage.deleteAccount(currentUser.id);
-        alert('Your account has been permanently deleted.');
-        navigate('/');
+        setIsLoading(true);
+        try {
+          await storage.deleteAccount(currentUser.id);
+          alert('Your account has been permanently deleted.');
+          navigate('/');
+        } catch (error: any) {
+          alert(error.message || 'Failed to delete account.');
+          setIsLoading(false);
+        }
       }
     } else if (confirmName !== null) {
       alert('Business name did not match. Deletion cancelled.');
@@ -248,8 +279,13 @@ const BusinessSettings: React.FC = () => {
                 ))}
               </div>
               <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex justify-end">
-                 <Button onClick={saveSettings} className="gap-2">
-                   <Save className="w-4 h-4" /> Save Preferences
+                 <Button onClick={saveSettings} className="gap-2" disabled={isLoading}>
+                   {isLoading ? (
+                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                   ) : (
+                     <Save className="w-4 h-4" />
+                   )}
+                   {isLoading ? 'Saving...' : 'Save Preferences'}
                  </Button>
               </div>
             </div>
@@ -267,8 +303,9 @@ const BusinessSettings: React.FC = () => {
                   variant="outline" 
                   className="border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/40"
                   onClick={handleDeleteAccount}
+                  disabled={isLoading}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete Account
+                  <Trash2 className="w-4 h-4 mr-2" /> {isLoading ? 'Deleting...' : 'Delete Account'}
                 </Button>
               </div>
             </div>

@@ -46,6 +46,7 @@ const AdminDashboard: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   
   // App State
   const [currentView, setCurrentView] = useState<AdminView>('overview');
@@ -75,17 +76,28 @@ const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const refreshData = () => {
-    setWaitlist(storage.getWaitlist());
-    setBusinesses(storage.getBusinesses());
+  const refreshData = async () => {
+    setLoading(true);
+    try {
+      const [waitlistData, businessesData] = await Promise.all([
+        storage.getWaitlist(),
+        storage.getBusinesses()
+      ]);
+      setWaitlist(waitlistData);
+      setBusinesses(businessesData);
+    } catch (error) {
+      console.error('Error refreshing admin data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passcode === ADMIN_PASSCODE) {
       setIsAuthenticated(true);
       sessionStorage.setItem('voxa_admin_auth', 'true');
-      refreshData();
+      await refreshData();
     } else {
       setError('Access Denied: Invalid Passcode');
       setPasscode('');
@@ -99,38 +111,55 @@ const AdminDashboard: React.FC = () => {
   };
 
   // Waitlist Actions
-  const handleApproveWaitlist = (id: string) => {
-    const code = storage.approveWaitlistEntry(id);
-    if (code) refreshData();
+  const handleApproveWaitlist = async (id: string) => {
+    try {
+      const code = await storage.approveWaitlistEntry(id);
+      if (code) await refreshData();
+    } catch (error) {
+      console.error('Error approving waitlist entry:', error);
+    }
   };
 
-  const handleDeleteWaitlist = (id: string) => {
+  const handleDeleteWaitlist = async (id: string) => {
     if (window.confirm('Are you sure you want to remove this entry?')) {
-      storage.deleteWaitlistEntry(id);
-      refreshData();
+      try {
+        await storage.deleteWaitlistEntry(id);
+        await refreshData();
+      } catch (error) {
+        console.error('Error deleting waitlist entry:', error);
+      }
     }
   };
 
   // Business Actions
-  const openBusinessDetail = (biz: Business) => {
+  const openBusinessDetail = async (biz: Business) => {
     setSelectedBusiness(biz);
     // Fetch detailed data
-    const inquiries = storage.getInquiriesByBusiness(biz.id);
-    setBusinessInquiries(inquiries);
-    const analytics = storage.getAnalyticsEvents(biz.id);
-    setBusinessAnalytics(analytics);
-
-    setCurrentView('business_detail');
+    try {
+      const [inquiries, analytics] = await Promise.all([
+        storage.getInquiriesByBusiness(biz.id),
+        storage.getAnalyticsEvents(biz.id)
+      ]);
+      setBusinessInquiries(inquiries);
+      setBusinessAnalytics(analytics);
+      setCurrentView('business_detail');
+    } catch (error) {
+      console.error('Error fetching business details:', error);
+    }
   };
 
-  const updateStatus = (status: 'active' | 'suspended' | 'banned') => {
+  const updateStatus = async (status: 'active' | 'suspended' | 'banned') => {
     if (!selectedBusiness) return;
     if (status !== 'active' && !window.confirm(`Are you sure you want to mark this business as ${status.toUpperCase()}?`)) return;
 
-    const updated = storage.updateBusinessStatus(selectedBusiness.id, status);
-    if (updated) {
-        setSelectedBusiness(updated); // Update local details
-        refreshData(); // Refresh list
+    try {
+      const updated = await storage.updateBusinessStatus(selectedBusiness.id, status);
+      if (updated) {
+          setSelectedBusiness(updated); // Update local details
+          await refreshData(); // Refresh list
+      }
+    } catch (error) {
+      console.error('Error updating business status:', error);
     }
   };
 
@@ -263,9 +292,14 @@ const AdminDashboard: React.FC = () => {
             
             {/* Top Bar */}
             <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-20">
-                <h2 className="text-xl font-bold text-slate-800 capitalize">
-                    {currentView === 'business_detail' ? 'Business Details' : currentView.replace('_', ' ')}
-                </h2>
+                <div className="flex items-center gap-4">
+                    <h2 className="text-xl font-bold text-slate-800 capitalize">
+                        {currentView === 'business_detail' ? 'Business Details' : currentView.replace('_', ' ')}
+                    </h2>
+                    {loading && (
+                        <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                </div>
                 <div className="flex items-center gap-4">
                     <span className="text-xs font-mono text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
                         STATUS: SECURE

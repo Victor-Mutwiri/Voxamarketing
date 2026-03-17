@@ -19,14 +19,18 @@ const DashboardSidebar: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const user = storage.getCurrentUser();
-    if (user?.businessId) {
-      setUnreadCount(storage.getUnreadInquiryCount(user.businessId));
-    }
+    const fetchUnread = async () => {
+      const user = await storage.getCurrentUser();
+      if (user?.businessId) {
+        const count = await storage.getUnreadInquiryCount(user.businessId);
+        setUnreadCount(count);
+      }
+    };
+    fetchUnread();
   }, [location, navigate]); // Re-fetch on route change
 
-  const handleLogout = () => {
-    storage.logout();
+  const handleLogout = async () => {
+    await storage.logout();
     navigate('/');
   };
 

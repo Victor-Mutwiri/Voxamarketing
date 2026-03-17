@@ -40,19 +40,24 @@ const BusinessOnboarding: React.FC = () => {
   const [step, setStep] = useState<OnboardingStep>(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  const [loading, setLoading] = useState<boolean>(false);
+
   // Load user from session
   useEffect(() => {
-    const user = storage.getCurrentUser();
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    setCurrentUser(user);
-    if (user.isProfileComplete) {
-      navigate('/business/dashboard');
-    }
-    // Pre-fill email from auth
-    setData(prev => ({ ...prev, email: user.email }));
+    const checkUser = async () => {
+      const user = await storage.getCurrentUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+      setCurrentUser(user);
+      if (user.isProfileComplete) {
+        navigate('/business/dashboard');
+      }
+      // Pre-fill email from auth
+      setData(prev => ({ ...prev, email: user.email }));
+    };
+    checkUser();
   }, [navigate]);
 
   const [data, setData] = useState<OnboardingData>({
@@ -69,7 +74,7 @@ const BusinessOnboarding: React.FC = () => {
     availability: 'Mon - Fri: 8:00 AM - 5:00 PM'
   });
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Basic validation per step
     if (step === 1 && !data.entityType) return alert('Please select an entity type.');
     if (step === 2 && (!data.name || !data.industry)) return alert('Name and Industry are required.');
@@ -81,21 +86,28 @@ const BusinessOnboarding: React.FC = () => {
     } else {
       // Final Submit -> Save to Storage
       if (currentUser) {
-        storage.saveBusinessProfile(currentUser.id, {
-           name: data.name,
-           industry: data.industry,
-           location: data.location,
-           fullDescription: data.about,
-           specialties: data.specialties,
-           phone: data.phone,
-           email: data.email,
-           website: data.website,
-           image: data.logo || "https://picsum.photos/400/300?random=100", // Fallback image if no logo
-           tags: data.specialties.slice(0, 3), // Use first 3 specialties as tags
-           entityType: data.entityType as EntityType
-        });
-        alert('Profile created successfully! Redirecting to dashboard...');
-        navigate('/business/dashboard');
+        setLoading(true);
+        try {
+          await storage.saveBusinessProfile(currentUser.id, {
+            name: data.name,
+            industry: data.industry,
+            location: data.location,
+            fullDescription: data.about,
+            specialties: data.specialties,
+            phone: data.phone,
+            email: data.email,
+            website: data.website,
+            image: data.logo || "https://picsum.photos/400/300?random=100", // Fallback image if no logo
+            tags: data.specialties.slice(0, 3), // Use first 3 specialties as tags
+            entityType: data.entityType as EntityType
+          });
+          alert('Profile created successfully! Redirecting to dashboard...');
+          navigate('/business/dashboard');
+        } catch (error: any) {
+          alert(error.message || 'Failed to save profile. Please try again.');
+        } finally {
+          setLoading(false);
+        }
       }
     }
   };
@@ -388,13 +400,19 @@ const BusinessOnboarding: React.FC = () => {
               <Button 
                 variant="ghost" 
                 onClick={handleBack}
-                disabled={step === 1}
+                disabled={step === 1 || loading}
                 className={step === 1 ? 'invisible' : ''}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
-              <Button variant="primary" onClick={handleNext}>
-                {step === 4 ? 'Complete Profile' : 'Next Step'} <ArrowRight className="w-4 h-4 ml-2" />
+              <Button variant="primary" onClick={handleNext} disabled={loading}>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    {step === 4 ? 'Complete Profile' : 'Next Step'} <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
             </div>
 

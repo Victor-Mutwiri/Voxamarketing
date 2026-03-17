@@ -25,17 +25,22 @@ const AuthPage: React.FC = () => {
     code: ''
   });
 
+  const [loading, setLoading] = useState<boolean>(false);
+
   // Check for existing session on mount
   useEffect(() => {
-    const user = storage.getCurrentUser();
-    if (user) {
-      // User is already logged in, redirect them
-      if (user.isProfileComplete) {
-        navigate('/business/dashboard', { replace: true });
-      } else {
-        navigate('/business/onboarding', { replace: true });
+    const checkSession = async () => {
+      const user = await storage.getCurrentUser();
+      if (user) {
+        // User is already logged in, redirect them
+        if (user.isProfileComplete) {
+          navigate('/business/dashboard', { replace: true });
+        } else {
+          navigate('/business/onboarding', { replace: true });
+        }
       }
-    }
+    };
+    checkSession();
   }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,35 +48,43 @@ const AuthPage: React.FC = () => {
     setError(''); // Clear error on type
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    if (view === 'login') {
-      const user = storage.login(formData.email, formData.password);
-      if (user) {
-        if (user.isProfileComplete) {
-          navigate('/business/dashboard');
+    try {
+      if (view === 'login') {
+        const user = await storage.login(formData.email, formData.password);
+        if (user) {
+          if (user.isProfileComplete) {
+            navigate('/business/dashboard');
+          } else {
+            navigate('/business/onboarding');
+          }
         } else {
-          navigate('/business/onboarding');
+          setError('Invalid email or password.');
         }
       } else {
-        setError('Invalid email or password.');
-      }
-    } else {
-      // Redeem / Signup
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match.');
-        return;
-      }
+        // Redeem / Signup
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match.');
+          setLoading(false);
+          return;
+        }
 
-      const newUser = storage.register(formData.email, formData.password, formData.code);
-      if (newUser) {
-        // Success
-        navigate('/business/onboarding');
-      } else {
-        setError('Invalid invitation code or email. Please check your invite.');
+        const newUser = await storage.register(formData.email, formData.password, formData.code);
+        if (newUser) {
+          // Success
+          navigate('/business/onboarding');
+        } else {
+          setError('Invalid invitation code or email. Please check your invite.');
+        }
       }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during authentication.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -117,6 +130,7 @@ const AuthPage: React.FC = () => {
                   view === 'login' ? 'text-voxa-navy' : 'text-slate-400 hover:text-slate-600'
                 }`}
                 onClick={() => setView('login')}
+                disabled={loading}
               >
                 Partner Login
                 {view === 'login' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-voxa-gold"></div>}
@@ -126,6 +140,7 @@ const AuthPage: React.FC = () => {
                   view === 'redeem' ? 'text-voxa-navy' : 'text-slate-400 hover:text-slate-600'
                 }`}
                 onClick={() => setView('redeem')}
+                disabled={loading}
               >
                 Claim Invitation
                 {view === 'redeem' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-voxa-gold"></div>}
@@ -152,7 +167,8 @@ const AuthPage: React.FC = () => {
                         type="email"
                         name="email"
                         required
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all"
+                        disabled={loading}
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all disabled:opacity-50"
                         placeholder="contact@company.com"
                         value={formData.email}
                         onChange={handleInputChange}
@@ -167,7 +183,8 @@ const AuthPage: React.FC = () => {
                         type="password"
                         name="password"
                         required
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all"
+                        disabled={loading}
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all disabled:opacity-50"
                         placeholder="••••••••"
                         value={formData.password}
                         onChange={handleInputChange}
@@ -196,7 +213,8 @@ const AuthPage: React.FC = () => {
                         type="text"
                         name="code"
                         required
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all uppercase tracking-wider"
+                        disabled={loading}
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all uppercase tracking-wider disabled:opacity-50"
                         placeholder="VOXA-XXXX"
                         value={formData.code}
                         onChange={handleInputChange}
@@ -212,7 +230,8 @@ const AuthPage: React.FC = () => {
                         type="email"
                         name="email"
                         required
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all"
+                        disabled={loading}
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none transition-all disabled:opacity-50"
                         placeholder="contact@company.com"
                         value={formData.email}
                         onChange={handleInputChange}
@@ -227,7 +246,8 @@ const AuthPage: React.FC = () => {
                         type="password"
                         name="password"
                         required
-                        className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none"
+                        disabled={loading}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none disabled:opacity-50"
                         placeholder="Create Password"
                         value={formData.password}
                         onChange={handleInputChange}
@@ -239,7 +259,8 @@ const AuthPage: React.FC = () => {
                         type="password"
                         name="confirmPassword"
                         required
-                        className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none"
+                        disabled={loading}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-voxa-gold focus:ring-1 focus:ring-voxa-gold outline-none disabled:opacity-50"
                         placeholder="Confirm Password"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
@@ -249,9 +270,15 @@ const AuthPage: React.FC = () => {
                 </div>
               )}
 
-              <Button variant="primary" size="lg" className="w-full gap-2 mt-6">
-                {view === 'login' ? 'Access Dashboard' : 'Verify & Create Account'}
-                <ArrowRight className="w-4 h-4" />
+              <Button variant="primary" size="lg" className="w-full gap-2 mt-6" disabled={loading}>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    {view === 'login' ? 'Access Dashboard' : 'Verify & Create Account'}
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </Button>
             </form>
 
