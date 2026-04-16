@@ -26,7 +26,11 @@ export const storage = {
         code: 'PENDING-' + Math.random().toString(36).substring(7).toUpperCase() 
       }]);
     
-    return !error;
+    if (error) {
+      console.error('Supabase error adding to waitlist:', error);
+      throw new Error(error.message);
+    }
+    return true;
   },
 
   getWaitlist: async (): Promise<WaitlistEntry[]> => {
@@ -35,7 +39,10 @@ export const storage = {
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) return [];
+    if (error) {
+      console.error('Supabase error fetching waitlist:', error);
+      return [];
+    }
     return data.map(item => ({
       id: item.id,
       email: item.email,
@@ -77,24 +84,41 @@ export const storage = {
 
   // Auth: Register User
   register: async (email: string, password: string, code: string): Promise<User | null> => {
+    console.log('[DEBUG] register started for:', email, 'code:', code);
+    
     // 1. Verify invitation
     const { data: invite, error: inviteError } = await supabase
       .from('invitations')
       .select('*')
-      .eq('email', email.toLowerCase())
-      .eq('code', code)
+      .eq('email', email.toLowerCase().trim())
+      .eq('code', code.trim())
       .eq('status', 'approved')
       .single();
 
-    if (inviteError || !invite) return null;
+    if (inviteError || !invite) {
+      console.error('[DEBUG] Invite fetch failed:', inviteError || 'Not found');
+      return null;
+    }
+
+    console.log('[DEBUG] Invite verified, calling signUp');
 
     // 2. Sign up with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
+      email: email.toLowerCase().trim(),
       password,
+      options: {
+        data: {
+          invitation_id: invite.id
+        }
+      }
     });
 
-    if (authError || !authData.user) return null;
+    if (authError || !authData.user) {
+      console.error('[DEBUG] Auth signUp failed:', authError);
+      return null;
+    }
+
+    console.log('[DEBUG] Auth signUp success, updating invite');
 
     // 3. Mark invitation as used
     await supabase

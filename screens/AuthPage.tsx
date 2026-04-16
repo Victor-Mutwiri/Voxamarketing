@@ -127,17 +127,17 @@ const AuthPage: React.FC = () => {
             <div className="flex gap-8 mb-8 border-b border-gray-100">
               <button
                 className={`pb-4 text-lg font-medium transition-colors relative ${
-                  view === 'login' ? 'text-voxa-navy' : 'text-slate-400 hover:text-slate-600'
+                  view === 'login' ? 'text-voxa-navy font-bold' : 'text-slate-400 hover:text-slate-600'
                 }`}
                 onClick={() => setView('login')}
                 disabled={loading}
               >
-                Partner Login
+                Business Sign In
                 {view === 'login' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-voxa-gold"></div>}
               </button>
               <button
                 className={`pb-4 text-lg font-medium transition-colors relative ${
-                  view === 'redeem' ? 'text-voxa-navy' : 'text-slate-400 hover:text-slate-600'
+                  view === 'redeem' ? 'text-voxa-navy font-bold' : 'text-slate-400 hover:text-slate-600'
                 }`}
                 onClick={() => setView('redeem')}
                 disabled={loading}
@@ -146,6 +146,12 @@ const AuthPage: React.FC = () => {
                 {view === 'redeem' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-voxa-gold"></div>}
               </button>
             </div>
+
+            {view === 'redeem' && (
+              <p className="text-sm text-slate-500 mb-6 italic">
+                Waitlist approved? Use your unique code and approved email to set up your business account.
+              </p>
+            )}
 
             {error && (
               <div className="mb-6 bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">

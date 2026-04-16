@@ -49,7 +49,7 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   
   // App State
-  const [currentView, setCurrentView] = useState<AdminView>('overview');
+  const [currentView, setCurrentView] = useState<AdminView>('waitlist');
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
 
   // Data
@@ -69,24 +69,43 @@ const AdminDashboard: React.FC = () => {
 
   // Load Admin Session
   useEffect(() => {
-    const isAdmin = sessionStorage.getItem('voxa_admin_auth') === 'true';
-    if (isAdmin) {
-      setIsAuthenticated(true);
-      refreshData();
-    }
+    const checkAdminStatus = async () => {
+      // Check session storage first (passcode auth)
+      const isPasscodeAuth = sessionStorage.getItem('voxa_admin_auth') === 'true';
+      
+      // Also check if logged in user is an admin
+      const user = await storage.getCurrentUser();
+      const isUserAdmin = user?.role === 'admin';
+
+      if (isPasscodeAuth || isUserAdmin) {
+        setIsAuthenticated(true);
+        refreshData();
+      }
+    };
+
+    checkAdminStatus();
   }, []);
 
   const refreshData = async () => {
     setLoading(true);
     try {
+      console.log('Admin: Fetching data...');
       const [waitlistData, businessesData] = await Promise.all([
         storage.getWaitlist(),
         storage.getAllBusinesses()
-      ]);
+      ].map(p => p.catch(e => {
+        console.error('Fetch error:', e);
+        return [];
+      })));
+      
+      console.log('Admin: Waitlist count:', waitlistData.length);
+      console.log('Admin: Businesses count:', businessesData.length);
+      
       setWaitlist(waitlistData);
       setBusinesses(businessesData);
     } catch (error) {
       console.error('Error refreshing admin data:', error);
+      setError('System Error: Failed to fetch backend data. Check Supabase connection.');
     } finally {
       setLoading(false);
     }
