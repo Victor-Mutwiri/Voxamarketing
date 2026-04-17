@@ -386,10 +386,10 @@ const BusinessOnboarding: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex gap-3 text-blue-800 text-sm mt-8">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                <div className="bg-voxa-gold/10 border border-voxa-gold/20 p-4 rounded-lg flex gap-3 text-voxa-navy text-sm mt-8">
+                  <CheckCircle className="w-5 h-5 flex-shrink-0 text-voxa-gold" />
                   <p>
-                    By clicking "Complete Profile", you agree to our Terms of Service. Your profile will be reviewed by our team before getting a "Verified" badge.
+                    Your invitation has been cleared! By clicking "Complete Profile", you'll instantly activate your business listing and gain access to your dashboard.
                   </p>
                 </div>
               </div>

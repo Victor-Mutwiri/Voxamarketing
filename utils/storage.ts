@@ -219,6 +219,7 @@ export const storage = {
 
   // Business: Create Profile
   saveBusinessProfile: async (userId: string, data: Partial<Business>) => {
+    console.log('[DEBUG] saveBusinessProfile started for user:', userId);
     // 1. Create Business
     const { data: newBiz, error: bizError } = await supabase
       .from('businesses')
@@ -242,16 +243,26 @@ export const storage = {
       .select()
       .single();
 
-    if (bizError) throw bizError;
+    if (bizError) {
+      console.error('[DEBUG] saveBusinessProfile: Business creation failed:', bizError);
+      throw bizError;
+    }
+
+    console.log('[DEBUG] Business created, updating profile:', newBiz.id);
 
     // 2. Update Profile
-    await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ 
         business_id: newBiz.id,
         is_profile_complete: true 
       })
       .eq('id', userId);
+    
+    if (profileError) {
+      console.error('[DEBUG] saveBusinessProfile: Profile update failed:', profileError);
+      throw profileError;
+    }
     
     return newBiz;
   },
