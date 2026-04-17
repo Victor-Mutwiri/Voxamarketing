@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, EyeOff } from 'lucide-react';
+import { CheckCircle, EyeOff, AlertTriangle, Ban } from 'lucide-react';
 import Button from '../Button';
 import { Business } from '../../types';
 
@@ -8,23 +8,34 @@ interface AccountStatusProps {
 }
 
 const AccountStatus: React.FC<AccountStatusProps> = ({ business }) => {
+  const isSuspended = business?.accountStatus === 'suspended';
+  const isBanned = business?.accountStatus === 'banned';
+  const isActive = !isSuspended && !isBanned;
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
       <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Account Status</h3>
       
-      {business?.isVisible ? (
-        <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-2 text-green-700 font-bold mb-1">
+      {isActive ? (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold mb-1">
             <CheckCircle className="w-5 h-5" /> Active & Visible
           </div>
-          <p className="text-xs text-green-600">Your profile is currently visible to clients.</p>
+          <p className="text-xs text-green-600 dark:text-green-500">Your profile is currently visible to clients.</p>
+        </div>
+      ) : isSuspended ? (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400 font-bold mb-1">
+            <AlertTriangle className="w-5 h-5" /> Suspended
+          </div>
+          <p className="text-xs text-yellow-600 dark:text-yellow-500">Reason: {business.statusReason}</p>
         </div>
       ) : (
-        <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-2 text-gray-700 font-bold mb-1">
-            <EyeOff className="w-5 h-5" /> Hidden
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold mb-1">
+            <Ban className="w-5 h-5" /> Banned
           </div>
-          <p className="text-xs text-gray-600">Your profile is hidden from the directory.</p>
+          <p className="text-xs text-red-600 dark:text-red-500">Permanent violation of terms.</p>
         </div>
       )}
 

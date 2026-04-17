@@ -8,7 +8,9 @@ import {
   Eye, 
   Phone, 
   MessageSquare, 
-  MousePointerClick
+  MousePointerClick,
+  AlertCircle,
+  Ban
 } from 'lucide-react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import Button from '../components/Button';
@@ -128,6 +130,28 @@ const BusinessDashboard: React.FC = () => {
       {/* Main Content */}
       <main className="flex-grow md:ml-64 min-h-screen">
         <div className="p-8">
+          
+          {/* Suspension/Banned Banner */}
+          {businessData && businessData.accountStatus && businessData.accountStatus !== 'active' && (
+            <div className={`mb-8 p-4 rounded-xl border flex items-start gap-4 animate-in slide-in-from-top-4 duration-500 ${businessData.accountStatus === 'suspended' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+              <div className={`p-2 rounded-lg ${businessData.accountStatus === 'suspended' ? 'bg-yellow-200 text-yellow-700' : 'bg-red-200 text-red-700'}`}>
+                {businessData.accountStatus === 'suspended' ? <AlertCircle className="w-6 h-6" /> : <Ban className="w-6 h-6" />}
+              </div>
+              <div className="flex-grow">
+                <h3 className="font-bold text-lg">Account {businessData.accountStatus === 'suspended' ? 'Suspended' : 'Banned'}</h3>
+                <p className="text-sm opacity-90 mt-1">
+                  Reason: <span className="font-bold">{businessData.statusReason || 'Pending administrative review'}</span>
+                </p>
+                <p className="text-xs opacity-75 mt-2">
+                  Your profile has been removed from the public directory. If you believe this is an error, please contact support.
+                </p>
+              </div>
+              <Button size="sm" variant="outline" className={`border-current hover:bg-current/10 whitespace-nowrap ${businessData.accountStatus === 'suspended' ? 'text-yellow-800 border-yellow-300' : 'text-red-800 border-red-300'}`}>
+                Contact Support
+              </Button>
+            </div>
+          )}
+
           <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard Overview</h2>

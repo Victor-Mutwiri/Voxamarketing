@@ -50,6 +50,7 @@ export interface AnalyticsEvent {
   id: string;
   businessId: string;
   type: MetricType;
+  visitorId?: string; // To prevent fake metrics/spam
   timestamp: string; // ISO String
 }
 
@@ -70,6 +71,8 @@ export interface Business {
   isVisible: boolean;
   joinedAt: string; // ISO Date for when they signed up
   accountStatus?: 'active' | 'suspended' | 'banned';
+  statusReason?: string; // Reasom for suspension/ban
+  statusUpdatedAt?: string;
   metrics?: BusinessMetrics;
   specialties: string[];
   operatingHours?: OperatingHours;

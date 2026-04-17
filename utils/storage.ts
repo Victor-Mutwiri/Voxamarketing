@@ -335,6 +335,8 @@ export const storage = {
         isVisible: b.is_visible,
         joinedAt: b.joined_at,
         accountStatus: b.account_status,
+        statusReason: b.status_reason,
+        statusUpdatedAt: b.status_updated_at,
         specialties: b.specialties,
         operatingHours: b.operating_hours,
         entityType: b.entity_type,
@@ -351,34 +353,59 @@ export const storage = {
   },
 
   // Admin: Update Business Status
-  updateBusinessStatus: async (businessId: string, status: 'active' | 'suspended' | 'banned') => {
+  updateBusinessStatus: async (businessId: string, status: 'active' | 'suspended' | 'banned', reason?: string) => {
     const { data: updated, error } = await supabase
       .from('businesses')
       .update({ 
         account_status: status,
-        is_visible: status === 'active'
+        is_visible: status === 'active',
+        status_reason: reason || null,
+        status_updated_at: new Date().toISOString()
       })
       .eq('id', businessId)
       .select()
       .single();
     
-    return error ? null : updated;
+    return error ? null : {
+      ...updated,
+      statusReason: updated.status_reason,
+      statusUpdatedAt: updated.status_updated_at
+    };
+  },
+
+  // Analytics: Helper to get/create visitor ID (anti-spam)
+  getVisitorId: () => {
+    let id = localStorage.getItem('voxa_visitor_id');
+    if (!id) {
+      id = 'v-' + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('voxa_visitor_id', id);
+    }
+    return id;
   },
 
   // Analytics: Increment Metric & Log Event
   incrementBusinessMetric: async (businessId: string, metric: 'views' | 'contactReveals' | 'websiteClicks') => {
-    // 1. Log Event
+    const visitorId = storage.getVisitorId();
     let eventType: MetricType = 'view';
     if (metric === 'contactReveals') eventType = 'contact_reveal';
     if (metric === 'websiteClicks') eventType = 'website_click';
 
-    await supabase.from('analytics_events').insert([{
+    // 1. Check if this visitor has already logged this type for this business today
+    // (Simple client-side throttler to save DB calls, can be reinforced with DB constraint)
+    const today = new Date().toISOString().split('T')[0];
+    const throttleKey = `voxa_log_${businessId}_${eventType}_${today}`;
+    if (localStorage.getItem(throttleKey)) return;
+
+    // 2. Log Event
+    const { error } = await supabase.from('analytics_events').insert([{
       business_id: businessId,
-      type: eventType
+      type: eventType,
+      visitor_id: visitorId
     }]);
 
-    // 2. Update Totals (Optional, could be calculated via SQL view)
-    // For now we just log the event
+    if (!error) {
+      localStorage.setItem(throttleKey, 'true');
+    }
   },
 
   // Analytics: Get Events for Business
@@ -393,6 +420,7 @@ export const storage = {
       id: e.id,
       businessId: e.business_id,
       type: e.type as MetricType,
+      visitorId: e.visitor_id,
       timestamp: e.timestamp
     }));
   },
@@ -455,6 +483,8 @@ export const storage = {
       isVisible: data.is_visible,
       joinedAt: data.joined_at,
       accountStatus: data.account_status,
+      statusReason: data.status_reason,
+      statusUpdatedAt: data.status_updated_at,
       specialties: data.specialties,
       operatingHours: data.operating_hours,
       entityType: data.entity_type

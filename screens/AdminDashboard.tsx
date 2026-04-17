@@ -61,6 +61,21 @@ const AdminDashboard: React.FC = () => {
   const [businessAnalytics, setBusinessAnalytics] = useState<AnalyticsEvent[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Status Modal State
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<'suspended' | 'banned' | null>(null);
+  const [statusReason, setStatusReason] = useState('');
+
+  const STATUS_REASONS = [
+    'Subscription Expired',
+    'Trial Period Ended',
+    'Violation of Terms of Service',
+    'Disciplinary Action',
+    'Suspicious Activity',
+    'Unpaid Invoices',
+    'Account Maintenance'
+  ];
+
   // Date Filtering State for Detail View
   const [dateRange, setDateRange] = useState<{ start: Date, end: Date }>({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -86,10 +101,9 @@ const AdminDashboard: React.FC = () => {
     checkAdminStatus();
   }, []);
 
-  const refreshData = async () => {
-    setLoading(true);
+  const refreshData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      console.log('Admin: Fetching data...');
       const [waitlistData, businessesData] = await Promise.all([
         storage.getWaitlist(),
         storage.getAllBusinesses()
@@ -98,14 +112,17 @@ const AdminDashboard: React.FC = () => {
         return [];
       })));
       
-      console.log('Admin: Waitlist count:', waitlistData.length);
-      console.log('Admin: Businesses count:', businessesData.length);
-      
       setWaitlist(waitlistData);
       setBusinesses(businessesData);
+      
+      // Update selected business if we are in detail view
+      if (selectedBusiness) {
+        const updated = businessesData.find(b => b.id === selectedBusiness.id);
+        if (updated) setSelectedBusiness(updated);
+      }
     } catch (error) {
       console.error('Error refreshing admin data:', error);
-      setError('System Error: Failed to fetch backend data. Check Supabase connection.');
+      setError('System Error: Failed to fetch backend data.');
     } finally {
       setLoading(false);
     }
@@ -169,13 +186,36 @@ const AdminDashboard: React.FC = () => {
 
   const updateStatus = async (status: 'active' | 'suspended' | 'banned') => {
     if (!selectedBusiness) return;
-    if (status !== 'active' && !window.confirm(`Are you sure you want to mark this business as ${status.toUpperCase()}?`)) return;
+    
+    if (status === 'active') {
+        try {
+            const updated = await storage.updateBusinessStatus(selectedBusiness.id, status, 'Account reactivated by administrator');
+            if (updated) {
+                setSelectedBusiness(updated);
+                await refreshData(true);
+            }
+        } catch (error) {
+            console.error('Error reactivating business:', error);
+        }
+        return;
+    }
+
+    // Otherwise show modal for reason
+    setPendingStatus(status);
+    setShowStatusModal(true);
+  };
+
+  const confirmStatusUpdate = async () => {
+    if (!selectedBusiness || !pendingStatus || !statusReason) return;
 
     try {
-      const updated = await storage.updateBusinessStatus(selectedBusiness.id, status);
+      const updated = await storage.updateBusinessStatus(selectedBusiness.id, pendingStatus, statusReason);
       if (updated) {
-          setSelectedBusiness(updated); // Update local details
-          await refreshData(); // Refresh list
+          setSelectedBusiness(updated);
+          await refreshData(true);
+          setShowStatusModal(false);
+          setPendingStatus(null);
+          setStatusReason('');
       }
     } catch (error) {
       console.error('Error updating business status:', error);
@@ -312,12 +352,16 @@ const AdminDashboard: React.FC = () => {
             {/* Top Bar */}
             <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-20">
                 <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => refreshData(true)}
+                        className={`p-2 rounded-full hover:bg-slate-100 transition-colors ${loading ? 'animate-spin text-slate-400' : 'text-slate-600'}`}
+                        title="Refresh Data"
+                    >
+                        <Activity className="w-5 h-5" />
+                    </button>
                     <h2 className="text-xl font-bold text-slate-800 capitalize">
                         {currentView === 'business_detail' ? 'Business Details' : currentView.replace('_', ' ')}
                     </h2>
-                    {loading && (
-                        <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                    )}
                 </div>
                 <div className="flex items-center gap-4">
                     <span className="text-xs font-mono text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
@@ -685,6 +729,62 @@ const AdminDashboard: React.FC = () => {
                 )}
 
             </div>
+
+            {/* STATUS UPDATE MODAL */}
+            {showStatusModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                {pendingStatus === 'suspended' ? <AlertTriangle className="text-yellow-500 w-5 h-5" /> : <Ban className="text-red-500 w-5 h-5" />}
+                                {pendingStatus === 'suspended' ? 'Suspend Account' : 'Permanent Ban'}
+                            </h3>
+                            <button onClick={() => setShowStatusModal(false)} className="text-slate-400 hover:text-slate-600"><XCircle className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-slate-600">
+                                This action will restrict the business's visibility on the platform. Please provide a reason:
+                            </p>
+                            
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase">Preset Reasons</label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {STATUS_REASONS.map(reason => (
+                                        <button 
+                                            key={reason}
+                                            onClick={() => setStatusReason(reason)}
+                                            className={`text-left text-sm p-3 rounded-lg border transition-all ${statusReason === reason ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                                        >
+                                            {reason}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-slate-400 uppercase block mb-2">Detailed Context (Internal)</label>
+                                <textarea 
+                                    className="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-slate-900 outline-none text-sm h-24"
+                                    placeholder="Enter more details for the audit log..."
+                                    value={statusReason}
+                                    onChange={(e) => setStatusReason(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="p-6 bg-slate-50 flex gap-3">
+                            <Button variant="ghost" className="flex-1" onClick={() => setShowStatusModal(false)}>Cancel</Button>
+                            <Button 
+                                variant="primary" 
+                                className={`flex-1 ${pendingStatus === 'suspended' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'}`}
+                                disabled={!statusReason}
+                                onClick={confirmStatusUpdate}
+                            >
+                                Confirm {pendingStatus === 'suspended' ? 'Suspension' : 'Ban'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     </div>
   );
